@@ -1,0 +1,117 @@
+.content {
+  padding: 40px;
+  max-width: 900px;
+}
+
+.formContainer {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text-dark);
+}
+
+.sectionHeader .sectionTitle {
+  margin-bottom: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.content label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #555555;
+}
+
+.content input[type="text"], 
+.content input[type="email"], 
+.content input[type="tel"], 
+.content select {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  background-color: #FAFAFA;
+}
+
+.content input:focus, .content select:focus {
+  border-color: var(--primary-color);
+  background-color: #FFFFFF;
+}
+
+.contactCard {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+  background-color: #FAFAFA;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  margin-bottom: 0 !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+
+.btnSecondary {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: #FFFFFF;
+  color: var(--text-dark);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-right: 12px;
+}
+
+.btnPrimary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--primary-color);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 20px 15px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

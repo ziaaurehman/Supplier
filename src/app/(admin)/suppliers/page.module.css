@@ -1,0 +1,88 @@
+.content {
+  padding: 40px;
+}
+
+.tableContainer {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th, .table td {
+  padding: 16px 24px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+}
+
+.table th {
+  background-color: #FAFAFA;
+  font-weight: 600;
+  color: #777777;
+}
+
+.tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: #E6F7FD;
+  color: var(--primary-color);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.statusActive {
+  color: #10B981;
+  font-weight: 600;
+}
+
+.statusInactive {
+  color: #EF4444;
+  font-weight: 600;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.actionBtn:hover {
+  text-decoration: underline;
+}
+
+.btnSecondary {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: #FFFFFF;
+  color: var(--text-dark);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-right: 12px;
+}
+
+.btnPrimary {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--primary-color);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
