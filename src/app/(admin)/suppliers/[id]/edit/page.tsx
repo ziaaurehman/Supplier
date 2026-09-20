@@ -1,12 +1,12 @@
 "use client";
 
-import Topbar from "../../../../components/Topbar";
+import Topbar from "../../../../../components/Topbar";
 import styles from "./page.module.css";
 import Link from "next/link";
-import { useLanguage } from "../../../../context/LanguageContext";
+import { useLanguage } from "../../../../../context/LanguageContext";
 import { useState } from "react";
 
-export default function CreateSupplierPage() {
+export default function EditSupplierPage() {
   const { t } = useLanguage();
   const [contacts, setContacts] = useState([1]);
 
@@ -20,7 +20,7 @@ export default function CreateSupplierPage() {
 
   return (
     <div>
-      <Topbar title={t("addSupplierTitle")} subtitle={t("addSupplierSubtitle")} backUrl="/suppliers">
+      <Topbar title="Edit Supplier" subtitle="Update supplier details" backUrl="/suppliers">
         <Link href="/suppliers">
           <button className={styles.btnSecondary}>{t("cancel")}</button>
         </Link>

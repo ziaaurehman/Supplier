@@ -1,12 +1,12 @@
 "use client";
 
-import Topbar from "../../../../components/Topbar";
+import Topbar from "../../../../../components/Topbar";
 import styles from "./page.module.css";
 import Link from "next/link";
-import { useLanguage } from "../../../../context/LanguageContext";
+import { useLanguage } from "../../../../../context/LanguageContext";
 import { useState } from "react";
 
-export default function CreateProjectPage() {
+export default function EditProjectPage() {
   const { t } = useLanguage();
   const [items, setItems] = useState([1]);
 
@@ -20,7 +20,7 @@ export default function CreateProjectPage() {
 
   return (
     <div>
-      <Topbar title={t("createProjectTitle")} subtitle={t("createProjectSubtitle")} backUrl="/projects">
+      <Topbar title="Edit Project" subtitle="Update project details" backUrl="/projects">
         <Link href="/projects">
           <button className={styles.btnSecondary}>{t("cancel")}</button>
         </Link>

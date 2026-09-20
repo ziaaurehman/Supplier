@@ -10,7 +10,7 @@ export default function SupplierSelectionPage() {
 
   return (
     <div>
-      <Topbar title="Select Suppliers" subtitle="Choose who will receive this enquiry">
+      <Topbar title="Select Suppliers" subtitle="Choose who will receive this enquiry" backUrl="/projects/new">
         <Link href="/projects">
           <button className={styles.btnSecondary}>{t("saveDraft")}</button>
         </Link>

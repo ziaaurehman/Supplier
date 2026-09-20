@@ -12,7 +12,7 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
 
   return (
     <div>
-      <Topbar title="Project #P-2026-001" subtitle="150 Water Bottles with logo • Deadline: Oct 15, 2026">
+      <Topbar title="Project #P-2026-001" subtitle="150 Water Bottles with logo • Deadline: Oct 15, 2026" backUrl="/projects">
         <Link href={`/projects/${id}/compare`}>
           <button className={styles.btnPrimary}>{t("compareQuotes")}</button>
         </Link>
@@ -121,7 +121,13 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                 </select>
                 <textarea rows={3} placeholder="Type your message..." className={styles.replyTextarea}></textarea>
                 <div className={styles.replyActions}>
-                  <button className={styles.btnSecondary}>{t("attachFile")}</button>
+                  <input type="file" id="attachFile" style={{ display: 'none' }} />
+                  <button 
+                    className={styles.btnSecondary} 
+                    onClick={() => document.getElementById('attachFile')?.click()}
+                  >
+                    {t("attachFile")}
+                  </button>
                   <button className={styles.btnPrimary}>{t("sendMessage")}</button>
                 </div>
               </div>

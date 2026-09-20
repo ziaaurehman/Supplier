@@ -37,7 +37,11 @@ export default function SuppliersPage() {
                 <td>jane@acmepromos.de</td>
                 <td><span className={styles.tag}>Water Bottles</span></td>
                 <td><span className={styles.statusActive}>Active</span></td>
-                <td><button className={styles.actionBtn}>{t("edit")}</button></td>
+                <td>
+                  <Link href="/suppliers/1/edit">
+                    <button className={styles.actionBtn}>{t("edit")}</button>
+                  </Link>
+                </td>
               </tr>
               <tr>
                 <td>Printify Europe</td>
@@ -45,7 +49,11 @@ export default function SuppliersPage() {
                 <td>john.smith@printify.eu</td>
                 <td><span className={styles.tag}>T-Shirts</span> <span className={styles.tag}>Apparel</span></td>
                 <td><span className={styles.statusActive}>Active</span></td>
-                <td><button className={styles.actionBtn}>{t("edit")}</button></td>
+                <td>
+                  <Link href="/suppliers/2/edit">
+                    <button className={styles.actionBtn}>{t("edit")}</button>
+                  </Link>
+                </td>
               </tr>
               <tr>
                 <td>Lanyard Kings</td>
@@ -53,7 +61,11 @@ export default function SuppliersPage() {
                 <td>max@lanyardkings.com</td>
                 <td><span className={styles.tag}>Lanyards</span></td>
                 <td><span className={styles.statusInactive}>Inactive</span></td>
-                <td><button className={styles.actionBtn}>{t("edit")}</button></td>
+                <td>
+                  <Link href="/suppliers/3/edit">
+                    <button className={styles.actionBtn}>{t("edit")}</button>
+                  </Link>
+                </td>
               </tr>
             </tbody>
           </table>

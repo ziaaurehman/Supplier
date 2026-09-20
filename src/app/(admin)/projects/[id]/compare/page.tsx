@@ -9,7 +9,7 @@ export default function QuoteComparisonPage() {
 
   return (
     <div>
-      <Topbar title={t("comparisonTitle")} subtitle="Project #P-2026-001 • Deadline: Oct 15, 2026">
+      <Topbar title={t("comparisonTitle")} subtitle="Project #P-2026-001 • Deadline: Oct 15, 2026" backUrl="/projects/1">
         <button className={styles.btnSecondary}>{t("exportExcel")}</button>
       </Topbar>
 
