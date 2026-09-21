@@ -19,7 +19,7 @@
 }
 
 .sectionTitle {
-  font-size: 18px;
+  font-size: clamp(16px, 4vw, 18px);
   font-weight: 700;
   margin-bottom: 20px;
   color: var(--text-dark);

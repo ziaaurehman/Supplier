@@ -35,47 +35,49 @@ export default function SupplierSelectionPage() {
             </select>
           </div>
 
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: "40px" }}></th>
-                <th>{t("thSupplierName")}</th>
-                <th>{t("thCategories")}</th>
-                <th>{t("thLanguage")}</th>
-                <th>Last Used</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><input type="checkbox" defaultChecked /></td>
-                <td><strong>Acme Promos GmbH</strong></td>
-                <td><span className={styles.tag}>Water Bottles</span></td>
-                <td>German</td>
-                <td>2 days ago</td>
-              </tr>
-              <tr>
-                <td><input type="checkbox" defaultChecked /></td>
-                <td><strong>Printify Europe</strong></td>
-                <td><span className={styles.tag}>Apparel</span> <span className={styles.tag}>Water Bottles</span></td>
-                <td>English</td>
-                <td>1 week ago</td>
-              </tr>
-              <tr>
-                <td><input type="checkbox" /></td>
-                <td><strong>Lanyard Kings</strong></td>
-                <td><span className={styles.tag}>Lanyards</span></td>
-                <td>English</td>
-                <td>1 month ago</td>
-              </tr>
-              <tr>
-                <td><input type="checkbox" defaultChecked /></td>
-                <td><strong>Global Merch</strong></td>
-                <td><span className={styles.tag}>Bags</span> <span className={styles.tag}>Water Bottles</span></td>
-                <td>English</td>
-                <td>3 days ago</td>
-              </tr>
-            </tbody>
-          </table>
+          <div className={styles.tableResponsive}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th style={{ width: "40px" }}></th>
+                  <th>{t("thSupplierName")}</th>
+                  <th>{t("thCategories")}</th>
+                  <th>{t("thLanguage")}</th>
+                  <th>Last Used</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><input type="checkbox" defaultChecked /></td>
+                  <td><strong>Acme Promos GmbH</strong></td>
+                  <td><span className={styles.tag}>Water Bottles</span></td>
+                  <td>German</td>
+                  <td>2 days ago</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" defaultChecked /></td>
+                  <td><strong>Printify Europe</strong></td>
+                  <td><span className={styles.tag}>Apparel</span> <span className={styles.tag}>Water Bottles</span></td>
+                  <td>English</td>
+                  <td>1 week ago</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" /></td>
+                  <td><strong>Lanyard Kings</strong></td>
+                  <td><span className={styles.tag}>Lanyards</span></td>
+                  <td>English</td>
+                  <td>1 month ago</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" defaultChecked /></td>
+                  <td><strong>Global Merch</strong></td>
+                  <td><span className={styles.tag}>Bags</span> <span className={styles.tag}>Water Bottles</span></td>
+                  <td>English</td>
+                  <td>3 days ago</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

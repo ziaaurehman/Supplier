@@ -99,3 +99,26 @@
   cursor: pointer;
   font-weight: 600;
 }
+
+.tableResponsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 20px 15px;
+  }
+  .filterBar {
+    flex-direction: column;
+    padding: 15px;
+  }
+  .searchInput, .filterSelect {
+    width: 100%;
+  }
+  .table th, .table td {
+    padding: 12px 15px;
+    font-size: 13px;
+  }
+}
