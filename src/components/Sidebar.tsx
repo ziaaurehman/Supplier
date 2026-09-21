@@ -18,9 +18,9 @@ export default function Sidebar() {
     { label: t("dashboard"), href: "/" },
     { label: t("projects"), href: "/projects" },
     ...(role === "ADMIN" ? [
-      { label: t("suppliers"), href: "/suppliers" },
-      { label: t("settings"), href: "/settings" }
-    ] : [])
+      { label: t("suppliers"), href: "/suppliers" }
+    ] : []),
+    { label: t("settings"), href: "/settings" }
   ];
 
   const roleLabels = {

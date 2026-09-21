@@ -14,7 +14,7 @@ export default function ExternalLayout({
         borderBottom: "1px solid var(--border-color)",
         textAlign: "center" 
       }}>
-        <div style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-dark)" }}>
+        <div style={{ fontSize: "clamp(20px, 5vw, 24px)", fontWeight: "700", color: "var(--text-dark)" }}>
           Supplier<span style={{ color: "var(--primary-color)" }}>RFQ</span>
         </div>
       </header>

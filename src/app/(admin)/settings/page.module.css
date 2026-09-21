@@ -1,6 +1,5 @@
 .content {
   padding: 40px;
-  max-width: 800px;
 }
 
 .card {
@@ -39,7 +38,7 @@
   color: #555555;
 }
 
-.card input {
+.card input, .card select {
   padding: 10px 12px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -49,7 +48,7 @@
   background-color: #FAFAFA;
 }
 
-.card input:focus {
+.card input:focus, .card select:focus {
   border-color: var(--primary-color);
   background-color: #FFFFFF;
 }

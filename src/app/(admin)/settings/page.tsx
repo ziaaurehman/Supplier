@@ -3,9 +3,20 @@
 import Topbar from "../../../components/Topbar";
 import styles from "./page.module.css";
 import { useLanguage } from "../../../context/LanguageContext";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
+  const { role } = useAuth();
+
+  const roleLabels = {
+    "ADMIN": "Super Admin",
+    "INTERNAL_SALES": "Internal Sales",
+    "FIELD_SALES": "Field Sales"
+  };
+  
+  const currentRoleLabel = role ? roleLabels[role] : "User";
+  const defaultEmail = role ? `${role.toLowerCase()}@supplier-rfq.com` : "user@supplier-rfq.com";
 
   return (
     <div>
@@ -17,30 +28,32 @@ export default function SettingsPage() {
           <div className={styles.grid}>
             <div className={styles.inputGroup}>
               <label>{t("fullName")}</label>
-              <input type="text" defaultValue="Super Admin" />
+              <input type="text" defaultValue={currentRoleLabel} />
             </div>
             <div className={styles.inputGroup}>
               <label>{t("emailAddr")}</label>
-              <input type="email" defaultValue="admin@supplier-rfq.com" />
+              <input type="email" defaultValue={defaultEmail} />
             </div>
           </div>
           <button className={styles.btnPrimary}>{t("saveProfile")}</button>
         </div>
 
-        <div className={styles.card}>
-          <h2 className={styles.sectionTitle}>{t("emailConfig")}</h2>
-          <div className={styles.grid}>
-            <div className={styles.inputGroup}>
-              <label>{t("sendingDomain")}</label>
-              <input type="text" defaultValue="rfq.supplier-rfq.com" />
+        {role === "ADMIN" && (
+          <div className={styles.card}>
+            <h2 className={styles.sectionTitle}>{t("emailConfig")}</h2>
+            <div className={styles.grid}>
+              <div className={styles.inputGroup}>
+                <label>{t("sendingDomain")}</label>
+                <input type="text" defaultValue="rfq.supplier-rfq.com" />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>{t("apiKey")}</label>
+                <input type="password" defaultValue="************************" />
+              </div>
             </div>
-            <div className={styles.inputGroup}>
-              <label>{t("apiKey")}</label>
-              <input type="password" defaultValue="************************" />
-            </div>
+            <button className={styles.btnPrimary}>{t("saveEmail")}</button>
           </div>
-          <button className={styles.btnPrimary}>{t("saveEmail")}</button>
-        </div>
+        )}
 
         <div className={styles.card}>
           <h2 className={styles.sectionTitle}>{t("platformLang")}</h2>

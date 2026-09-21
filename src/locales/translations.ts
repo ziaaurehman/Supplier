@@ -143,6 +143,12 @@ export const translations = {
     quotedOn: "Quoted on",
     closed: "Closed",
     won: "Won - Ordered",
+    
+    // Login
+    loginSubtitle: "Select a role below to sign in (Mock Auth)",
+    loginAdmin: "Login as Admin",
+    loginInternal: "Login as Internal Sales",
+    loginField: "Login as Field Sales",
   },
   de: {
     // Sidebar
@@ -288,5 +294,11 @@ export const translations = {
     quotedOn: "Angeboten am",
     closed: "Geschlossen",
     won: "Gewonnen - Bestellt",
+    
+    // Login
+    loginSubtitle: "Wählen Sie eine Rolle aus, um sich anzumelden (Mock Auth)",
+    loginAdmin: "Als Admin anmelden",
+    loginInternal: "Als Vertriebsinnendienst anmelden",
+    loginField: "Als Außendienst anmelden",
   }
 };

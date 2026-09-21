@@ -31,3 +31,9 @@
   align-items: center;
   gap: 12px;
 }
+
+@media (max-width: 768px) {
+  .topbar {
+    padding: 15px 20px;
+  }
+}
