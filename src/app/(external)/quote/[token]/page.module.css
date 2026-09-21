@@ -183,6 +183,9 @@
   .container {
     padding: 20px 15px;
   }
+  .card {
+    padding: 15px;
+  }
   .infoGrid,
   .pricingGrid,
   .additionalCosts {

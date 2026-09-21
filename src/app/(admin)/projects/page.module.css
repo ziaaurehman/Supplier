@@ -6,7 +6,8 @@
   background-color: var(--card-bg);
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table {
@@ -66,4 +67,14 @@
   font-size: 14px;
   cursor: pointer;
   font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 20px 15px;
+  }
+  .table th, .table td {
+    padding: 12px 15px;
+    font-size: 13px;
+  }
 }

@@ -10,7 +10,7 @@ export default function ExternalLayout({
       {/* Simple header for external suppliers */}
       <header style={{ 
         backgroundColor: "var(--card-bg)", 
-        padding: "20px 40px", 
+        padding: "20px clamp(15px, 5vw, 40px)", 
         borderBottom: "1px solid var(--border-color)",
         textAlign: "center" 
       }}>
@@ -19,7 +19,7 @@ export default function ExternalLayout({
         </div>
       </header>
       
-      <main style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+      <main style={{ padding: "clamp(15px, 5vw, 40px)", maxWidth: "800px", margin: "0 auto" }}>
         {children}
       </main>
     </div>
