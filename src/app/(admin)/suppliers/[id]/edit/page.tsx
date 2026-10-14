@@ -4,29 +4,117 @@ import Topbar from "../../../../../components/Topbar";
 import styles from "./page.module.css";
 import Link from "next/link";
 import { useLanguage } from "../../../../../context/LanguageContext";
-import { useState } from "react";
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 
-export default function EditSupplierPage() {
+interface Contact {
+  key: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  isPrimary: boolean;
+}
+
+export default function EditSupplierPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const { t } = useLanguage();
-  const [contacts, setContacts] = useState([1]);
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const [name, setName] = useState("");
+  const [erpId, setErpId] = useState("");
+  const [language, setLanguage] = useState("de");
+  const [categoriesText, setCategoriesText] = useState("");
+  const [contacts, setContacts] = useState<Contact[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/suppliers/${id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const s = data.supplier;
+        setName(s.name);
+        setErpId(s.externalSupplierId || "");
+        setLanguage(s.language);
+        setCategoriesText(s.categories.map((c: { category: { name: string } }) => c.category.name).join(", "));
+        setContacts(
+          s.contacts.map((c: { firstName: string; lastName: string; email: string; phone: string | null; isPrimary: boolean }, i: number) => ({
+            key: i,
+            firstName: c.firstName,
+            lastName: c.lastName,
+            email: c.email,
+            phone: c.phone || "",
+            isPrimary: c.isPrimary,
+          }))
+        );
+      })
+      .catch(() => alert("Failed to load supplier"))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const handleAddContact = () => {
-    setContacts([...contacts, Date.now()]);
+    setContacts([...contacts, { key: Date.now(), firstName: "", lastName: "", email: "", phone: "", isPrimary: false }]);
   };
 
-  const handleRemoveContact = (indexToRemove: number) => {
-    setContacts(contacts.filter((_, index) => index !== indexToRemove));
+  const handleRemoveContact = (idx: number) => {
+    setContacts(contacts.filter((_, i) => i !== idx));
   };
+
+  const updateContact = (idx: number, field: keyof Contact, value: string | boolean) => {
+    setContacts(contacts.map((c, i) => (i === idx ? { ...c, [field]: value } : c)));
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) return alert("Company name is required");
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/suppliers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          externalSupplierId: erpId.trim() || null,
+          language,
+          categoryNames: categoriesText.split(",").map((c) => c.trim()).filter(Boolean),
+          contacts: contacts.map((c) => ({
+            firstName: c.firstName.trim(),
+            lastName: c.lastName.trim(),
+            email: c.email.trim(),
+            phone: c.phone.trim() || null,
+            isPrimary: c.isPrimary,
+          })),
+        }),
+      });
+      if (res.ok) {
+        router.push("/suppliers");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update supplier");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <Topbar title="Edit Supplier" subtitle="Loading..." backUrl="/suppliers" />
+        <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <Topbar title="Edit Supplier" subtitle="Update supplier details" backUrl="/suppliers">
+      <Topbar title="Edit Supplier" subtitle={`Editing ${name}`} backUrl="/suppliers">
         <Link href="/suppliers">
           <button className={styles.btnSecondary}>{t("cancel")}</button>
         </Link>
-        <Link href="/suppliers">
-          <button className={styles.btnPrimary}>{t("saveSupplier")}</button>
-        </Link>
+        <button className={styles.btnPrimary} onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : t("saveSupplier")}
+        </button>
       </Topbar>
 
       <div className={styles.content}>
@@ -35,23 +123,22 @@ export default function EditSupplierPage() {
           <div className={styles.grid}>
             <div className={styles.inputGroup}>
               <label>{t("companyName")}</label>
-              <input type="text" placeholder="e.g. Acme Promos GmbH" />
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className={styles.inputGroup}>
               <label>{t("erpId")}</label>
-              <input type="text" placeholder="e.g. ERP-9923" />
+              <input type="text" value={erpId} onChange={(e) => setErpId(e.target.value)} />
             </div>
             <div className={styles.inputGroup}>
               <label>{t("defaultLang")}</label>
-              <select>
-                <option>English</option>
-                <option>German</option>
-                <option>French</option>
+              <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                <option value="en">English</option>
+                <option value="de">German</option>
               </select>
             </div>
             <div className={styles.inputGroup}>
               <label>{t("productCats")}</label>
-              <input type="text" placeholder="e.g. Water Bottles, Apparel, Pens" />
+              <input type="text" value={categoriesText} onChange={(e) => setCategoriesText(e.target.value)} />
             </div>
           </div>
         </div>
@@ -63,40 +150,37 @@ export default function EditSupplierPage() {
           </div>
 
           {contacts.map((contact, index) => (
-            <div key={contact} className={styles.contactCard} style={{ marginTop: index > 0 ? "1rem" : "0", position: "relative" }}>
+            <div key={contact.key} className={styles.contactCard} style={{ marginTop: index > 0 ? "1rem" : "0", position: "relative" }}>
               {index > 0 && (
-                <button 
+                <button
                   onClick={() => handleRemoveContact(index)}
-                  style={{ position: "absolute", top: "1.25rem", right: "1.5rem", background: "none", border: "none", color: "var(--danger-color, #ef4444)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  title="Remove Contact"
+                  style={{ position: "absolute", top: "1.25rem", right: "1.5rem", background: "none", border: "none", color: "var(--danger-color, #ef4444)", cursor: "pointer" }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 6h18"></path>
-                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    <path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                   </svg>
                 </button>
               )}
               <div className={styles.grid}>
                 <div className={styles.inputGroup}>
                   <label>{t("firstName")}</label>
-                  <input type="text" placeholder="Jane" />
+                  <input type="text" value={contact.firstName} onChange={(e) => updateContact(index, "firstName", e.target.value)} />
                 </div>
                 <div className={styles.inputGroup}>
                   <label>{t("lastName")}</label>
-                  <input type="text" placeholder="Doe" />
+                  <input type="text" value={contact.lastName} onChange={(e) => updateContact(index, "lastName", e.target.value)} />
                 </div>
                 <div className={styles.inputGroup}>
                   <label>{t("emailAddr")}</label>
-                  <input type="email" placeholder="jane@acmepromos.de" />
+                  <input type="email" value={contact.email} onChange={(e) => updateContact(index, "email", e.target.value)} />
                 </div>
                 <div className={styles.inputGroup}>
                   <label>{t("phoneNum")}</label>
-                  <input type="tel" placeholder="+49 123 456789" />
+                  <input type="tel" value={contact.phone} onChange={(e) => updateContact(index, "phone", e.target.value)} />
                 </div>
               </div>
               <label className={styles.checkboxLabel}>
-                <input type="checkbox" defaultChecked={index === 0} />
+                <input type="checkbox" checked={contact.isPrimary} onChange={(e) => updateContact(index, "isPrimary", e.target.checked)} />
                 {t("primaryContact")}
               </label>
             </div>

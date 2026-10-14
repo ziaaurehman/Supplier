@@ -26,6 +26,7 @@ export const translations = {
     saveDraft: "Save as Draft",
     sendRFQs: "Send 3 RFQs",
     importCsv: "Import CSV",
+    exportCsv: "Export CSV",
     addSupplier: "+ Add Supplier",
     newProject: "+ New Project",
     view: "View",
@@ -144,8 +145,16 @@ export const translations = {
     closed: "Closed",
     won: "Won - Ordered",
     
+    // Audit Log
+    auditLog: "Audit Log",
+    auditLogSubtitle: "Track all system activity",
+
+    // User Management
+    userManagement: "Users",
+    userManagementSubtitle: "Manage platform users and roles",
+
     // Login
-    loginSubtitle: "Select a role below to sign in (Mock Auth)",
+    loginSubtitle: "Sign in to your account",
     loginAdmin: "Login as Admin",
     loginInternal: "Login as Internal Sales",
     loginField: "Login as Field Sales",
@@ -177,6 +186,7 @@ export const translations = {
     saveDraft: "Als Entwurf speichern",
     sendRFQs: "3 Anfragen senden",
     importCsv: "CSV Importieren",
+    exportCsv: "CSV Exportieren",
     addSupplier: "+ Neuer Lieferant",
     newProject: "+ Neues Projekt",
     view: "Ansehen",
@@ -295,8 +305,16 @@ export const translations = {
     closed: "Geschlossen",
     won: "Gewonnen - Bestellt",
     
+    // Audit Log
+    auditLog: "Protokoll",
+    auditLogSubtitle: "Alle Systemaktivitäten verfolgen",
+
+    // User Management
+    userManagement: "Benutzer",
+    userManagementSubtitle: "Benutzer und Rollen verwalten",
+
     // Login
-    loginSubtitle: "Wählen Sie eine Rolle aus, um sich anzumelden (Mock Auth)",
+    loginSubtitle: "Melden Sie sich bei Ihrem Konto an",
     loginAdmin: "Als Admin anmelden",
     loginInternal: "Als Vertriebsinnendienst anmelden",
     loginField: "Als Außendienst anmelden",

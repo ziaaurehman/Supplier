@@ -88,6 +88,32 @@
   font-weight: 600;
 }
 
+.searchBar {
+  margin-bottom: 20px;
+}
+
+.searchInput {
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  max-width: 320px;
+  font-family: inherit;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.emptyState {
+  padding: 40px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
 @media (max-width: 768px) {
   .content {
     padding: 20px 15px;

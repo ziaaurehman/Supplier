@@ -14,13 +14,15 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     }
   }, [role, isHydrated, router]);
 
-  if (!isHydrated || !role) {
+  if (!isHydrated) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
         <p>Loading...</p>
       </div>
     );
   }
+
+  if (!role) return null;
 
   return <>{children}</>;
 }

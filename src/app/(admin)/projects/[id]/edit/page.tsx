@@ -2,31 +2,103 @@
 
 import Topbar from "../../../../../components/Topbar";
 import styles from "./page.module.css";
-import Link from "next/link";
 import { useLanguage } from "../../../../../context/LanguageContext";
-import { useState } from "react";
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 
-export default function EditProjectPage() {
+interface Item {
+  key: number;
+  id?: string;
+  name: string;
+  description: string;
+  decorationMethod: string;
+  tiers: string[];
+}
+
+export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const { t } = useLanguage();
-  const [items, setItems] = useState([1]);
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleAddItem = () => {
-    setItems([...items, Date.now()]);
+  const [title, setTitle] = useState("");
+  const [customerRef, setCustomerRef] = useState("");
+  const [quoteDeadline, setQuoteDeadline] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [internalDesc, setInternalDesc] = useState("");
+  const [items, setItems] = useState<Item[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/projects/${id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const p = data.project;
+        setTitle(p.title);
+        setCustomerRef(p.customerReference || "");
+        setQuoteDeadline(p.quoteDeadline ? p.quoteDeadline.split("T")[0] : "");
+        setDeliveryDate(p.deliveryDate ? p.deliveryDate.split("T")[0] : "");
+        setInternalDesc(p.internalDescription || "");
+        setItems(
+          p.items.map((item: { id: string; name: string; description: string | null; decorationMethod: string | null; quantityTiers: { quantity: number }[] }, i: number) => ({
+            key: i,
+            id: item.id,
+            name: item.name,
+            description: item.description || "",
+            decorationMethod: item.decorationMethod || "Laser Engraving",
+            tiers: item.quantityTiers.length > 0
+              ? item.quantityTiers.map((qt) => String(qt.quantity))
+              : ["", "", ""],
+          }))
+        );
+      })
+      .catch(() => alert("Failed to load project"))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          customerReference: customerRef.trim() || null,
+          quoteDeadline: quoteDeadline || null,
+          deliveryDate: deliveryDate || null,
+          internalDescription: internalDesc.trim() || null,
+        }),
+      });
+      if (res.ok) {
+        router.push(`/projects/${id}`);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to update project");
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleRemoveItem = (indexToRemove: number) => {
-    setItems(items.filter((_, index) => index !== indexToRemove));
-  };
+  if (loading) {
+    return (
+      <div>
+        <Topbar title="Edit Project" subtitle="Loading..." backUrl="/projects" />
+        <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <Topbar title="Edit Project" subtitle="Update project details" backUrl="/projects">
-        <Link href="/projects">
-          <button className={styles.btnSecondary}>{t("cancel")}</button>
-        </Link>
-        <Link href="/projects/new/suppliers">
-          <button className={styles.btnPrimary}>{t("saveProceed")}</button>
-        </Link>
+      <Topbar title="Edit Project" subtitle={`Editing ${title}`} backUrl={`/projects/${id}`}>
+        <button className={styles.btnSecondary} onClick={() => router.push(`/projects/${id}`)}>
+          {t("cancel")}
+        </button>
+        <button className={styles.btnPrimary} onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : t("saveProceed")}
+        </button>
       </Topbar>
 
       <div className={styles.content}>
@@ -35,80 +107,36 @@ export default function EditProjectPage() {
           <div className={styles.grid}>
             <div className={styles.inputGroup}>
               <label>{t("thTitle")}</label>
-              <input type="text" placeholder="e.g. 150 Water Bottles with logo" />
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div className={styles.inputGroup}>
               <label>{t("customerRef")}</label>
-              <input type="text" placeholder="Enter customer name" />
+              <input type="text" value={customerRef} onChange={(e) => setCustomerRef(e.target.value)} />
             </div>
             <div className={styles.inputGroup}>
               <label>{t("thDeadline")}</label>
-              <input type="date" />
+              <input type="date" value={quoteDeadline} onChange={(e) => setQuoteDeadline(e.target.value)} />
             </div>
             <div className={styles.inputGroup}>
               <label>{t("deliveryDate")}</label>
-              <input type="date" />
+              <input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
             </div>
           </div>
-          
+
           <div className={styles.inputGroupFull}>
             <label>{t("internalDesc")}</label>
-            <textarea rows={3} placeholder="Add any internal notes here..."></textarea>
+            <textarea rows={3} value={internalDesc} onChange={(e) => setInternalDesc(e.target.value)}></textarea>
           </div>
         </div>
 
         <div className={styles.formContainer}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>{t("lineItems")}</h2>
-            <button className={styles.btnSecondary} onClick={handleAddItem}>{t("addItem")}</button>
-          </div>
-
+          <h2 className={styles.sectionTitle}>{t("lineItems")} (read-only)</h2>
           {items.map((item, index) => (
-            <div key={item} className={styles.itemCard} style={{ marginTop: index > 0 ? "1rem" : "0" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-                <div className={styles.itemHeader} style={{ marginBottom: 0 }}>Item {index + 1}</div>
-                {index > 0 && (
-                  <button 
-                    onClick={() => handleRemoveItem(index)}
-                    style={{ background: "none", border: "none", color: "var(--danger-color, #ef4444)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                    title="Remove Item"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18"></path>
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                    </svg>
-                  </button>
-                )}
-              </div>
-              <div className={styles.grid}>
-                <div className={styles.inputGroup}>
-                  <label>{t("itemName")}</label>
-                  <input type="text" placeholder="e.g. Stainless Steel Bottle 500ml" />
-                </div>
-                <div className={styles.inputGroup}>
-                  <label>{t("decoMethod")}</label>
-                  <select>
-                    <option>Laser Engraving</option>
-                    <option>Screen Print</option>
-                    <option>UV Print</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className={styles.inputGroupFull}>
-                <label>{t("itemDesc")}</label>
-                <textarea rows={2} placeholder="Color, material preference, etc."></textarea>
-              </div>
-
-              <div className={styles.tiersContainer}>
-                <label>{t("quantityTiers")}</label>
-                <div className={styles.tierGrid}>
-                  <input type="number" placeholder="Tier 1 (e.g. 150)" />
-                  <input type="number" placeholder="Tier 2 (e.g. 250)" />
-                  <input type="number" placeholder="Tier 3 (e.g. 500)" />
-                </div>
-              </div>
+            <div key={item.key} className={styles.itemCard} style={{ marginTop: index > 0 ? "1rem" : "0", opacity: 0.8 }}>
+              <div className={styles.itemHeader}>Item {index + 1}: {item.name}</div>
+              <p style={{ fontSize: "0.85rem", color: "#64748b" }}>
+                {item.decorationMethod} | Tiers: {item.tiers.filter(Boolean).join(" / ")}
+              </p>
             </div>
           ))}
         </div>

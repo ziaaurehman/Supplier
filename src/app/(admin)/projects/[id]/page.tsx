@@ -3,137 +3,369 @@
 import Topbar from "../../../../components/Topbar";
 import styles from "./page.module.css";
 import Link from "next/link";
-import { use } from "react";
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "../../../../context/LanguageContext";
+import { useAuth } from "../../../../context/AuthContext";
+
+interface RfqStatus {
+  id: string;
+  status: string;
+  sentAt: string | null;
+  openedAt: string | null;
+  supplier: { id: string; name: string };
+}
+
+interface ProjectItem {
+  id: string;
+  name: string;
+  description: string | null;
+  decorationMethod: string | null;
+  quantityTiers: { quantity: number }[];
+}
+
+interface ProjectDetail {
+  id: string;
+  projectNumber: string;
+  title: string;
+  status: string;
+  customerReference: string | null;
+  quoteDeadline: string | null;
+  deliveryDate: string | null;
+  items: ProjectItem[];
+  rfqs: RfqStatus[];
+}
+
+interface Message {
+  id: string;
+  content: string;
+  senderType: string;
+  senderName: string | null;
+  createdAt: string;
+}
+
+interface InternalNote {
+  id: string;
+  content: string;
+  createdAt: string;
+  user: { fullName: string | null; email: string };
+}
 
 export default function ProjectDashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { t } = useLanguage();
+  const { role } = useAuth();
+  const router = useRouter();
+  const [project, setProject] = useState<ProjectDetail | null>(null);
+  const [notes, setNotes] = useState<InternalNote[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"message" | "note">("message");
+  const [selectedRfq, setSelectedRfq] = useState<string>("");
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [attachments, setAttachments] = useState<{ id: string; fileName: string; fileUrl: string; createdAt: string }[]>([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/projects/${id}`).then((r) => r.json()),
+      fetch(`/api/projects/${id}/notes`).then((r) => r.json()).catch(() => ({ notes: [] })),
+    ]).then(([projectData, notesData]) => {
+      setProject(projectData.project);
+      setNotes(notesData.notes || []);
+      if (projectData.project?.rfqs?.length) {
+        setSelectedRfq(projectData.project.rfqs[0].id);
+      }
+    }).finally(() => setLoading(false));
+
+    fetch(`/api/attachments?projectId=${id}`)
+      .then((r) => r.json())
+      .then((data) => setAttachments(data.attachments || []))
+      .catch(() => {});
+  }, [id]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size must be under 10MB");
+      return;
+    }
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("projectId", id);
+      const res = await fetch("/api/attachments", { method: "POST", body: formData });
+      if (res.ok) {
+        const data = await res.json();
+        setAttachments((prev) => [...prev, data.attachment]);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Upload failed");
+      }
+    } finally {
+      setUploadingFile(false);
+      e.target.value = "";
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedRfq || !project) return;
+    fetch(`/api/rfqs/admin/${selectedRfq}/messages`)
+      .then((r) => r.json())
+      .then((data) => setMessages(data.messages || []))
+      .catch(() => setMessages([]));
+  }, [selectedRfq, project]);
+
+  const handleSend = async () => {
+    if (!replyText.trim()) return;
+    setSending(true);
+    try {
+      if (activeTab === "note") {
+        const res = await fetch(`/api/projects/${id}/notes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: replyText.trim() }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setNotes([...notes, data.note]);
+          setReplyText("");
+        }
+      } else {
+        if (!selectedRfq) return alert("Select a supplier first");
+        const res = await fetch(`/api/rfqs/admin/${selectedRfq}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: replyText.trim() }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMessages((prev) => [...prev, data.message]);
+          setReplyText("");
+        }
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const rfqStatusClass = (status: string) => {
+    switch (status) {
+      case "quoted": return styles.statusQuoted;
+      case "declined": return styles.statusDeclined;
+      case "opened": return styles.statusPending;
+      default: return styles.statusPending;
+    }
+  };
+
+  const rfqStatusLabel = (status: string) => {
+    switch (status) {
+      case "sent": return "Sent";
+      case "opened": return "Opened";
+      case "quoted": return t("quoted");
+      case "declined": return t("declined");
+      case "expired": return "Expired";
+      default: return status;
+    }
+  };
+
+  if (loading || !project) {
+    return (
+      <div>
+        <Topbar title="Loading..." subtitle="" backUrl="/projects" />
+        <div style={{ padding: 40, textAlign: "center" }}>Loading project...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <Topbar title="Project #P-2026-001" subtitle="150 Water Bottles with logo • Deadline: Oct 15, 2026" backUrl="/projects">
-        <Link href={`/projects/${id}/compare`}>
-          <button className={styles.btnPrimary}>{t("compareQuotes")}</button>
-        </Link>
+      <Topbar
+        title={`Project ${project.projectNumber}`}
+        subtitle={`${project.title} • Deadline: ${project.quoteDeadline ? new Date(project.quoteDeadline).toLocaleDateString() : "—"}`}
+        backUrl="/projects"
+      >
+        {project.status === "draft" && (
+          <Link href={`/projects/${id}/suppliers`}>
+            <button className={styles.btnPrimary}>{t("sendRFQs")}</button>
+          </Link>
+        )}
+        {project.rfqs.some((r) => r.status === "quoted") && (
+          <Link href={`/projects/${id}/compare`}>
+            <button className={styles.btnPrimary}>{t("compareQuotes")}</button>
+          </Link>
+        )}
+        {role === "ADMIN" && project.status !== "cancelled" && (
+          <button
+            style={{ padding: "8px 16px", background: "#fff", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 4, cursor: "pointer", fontWeight: 600, fontSize: 13, fontFamily: "inherit" }}
+            onClick={async () => {
+              if (!confirm("Cancel this project? It can be permanently deleted afterwards.")) return;
+              const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+              if (res.ok) router.push("/projects");
+              else alert("Failed to cancel project");
+            }}
+          >
+            {t("cancel")}
+          </button>
+        )}
       </Topbar>
 
       <div className={styles.content}>
         <div className={styles.grid}>
-          {/* Left Column: Suppliers & Status */}
           <div className={styles.column}>
             <div className={styles.card}>
               <h2 className={styles.sectionTitle}>{t("supplierStatus")}</h2>
-              <ul className={styles.supplierList}>
-                <li className={styles.supplierItem}>
-                  <div className={styles.supplierInfo}>
-                    <strong>Acme Promos GmbH</strong>
-                    <span>Sent: Oct 10, 14:00</span>
-                  </div>
-                  <span className={styles.statusQuoted}>{t("quoted")}</span>
-                </li>
-                <li className={styles.supplierItem}>
-                  <div className={styles.supplierInfo}>
-                    <strong>Printify Europe</strong>
-                    <span>Opened: Oct 10, 15:30</span>
-                  </div>
-                  <span className={styles.statusQuoted}>{t("quoted")}</span>
-                </li>
-                <li className={styles.supplierItem}>
-                  <div className={styles.supplierInfo}>
-                    <strong>Lanyard Kings</strong>
-                    <span>Declined: Oct 11, 09:15</span>
-                  </div>
-                  <span className={styles.statusDeclined}>{t("declined")}</span>
-                </li>
-                <li className={styles.supplierItem}>
-                  <div className={styles.supplierInfo}>
-                    <strong>Global Merch</strong>
-                    <span>Sent: Oct 10, 14:00</span>
-                  </div>
-                  <span className={styles.statusPending}>{t("pending")}</span>
-                </li>
-              </ul>
+              {project.rfqs.length === 0 ? (
+                <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>No RFQs sent yet. Select suppliers to send enquiries.</p>
+              ) : (
+                <ul className={styles.supplierList}>
+                  {project.rfqs.map((rfq) => (
+                    <li key={rfq.id} className={styles.supplierItem}>
+                      <div className={styles.supplierInfo}>
+                        <strong>{rfq.supplier.name}</strong>
+                        <span>
+                          {rfq.status === "sent" && rfq.sentAt && `Sent: ${new Date(rfq.sentAt).toLocaleString()}`}
+                          {rfq.status === "opened" && rfq.openedAt && `Opened: ${new Date(rfq.openedAt).toLocaleString()}`}
+                          {rfq.status === "quoted" && "Quote received"}
+                          {rfq.status === "declined" && "Declined"}
+                        </span>
+                      </div>
+                      <span className={rfqStatusClass(rfq.status)}>{rfqStatusLabel(rfq.status)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            
+
             <div className={styles.card}>
               <h2 className={styles.sectionTitle}>{t("projectDetails")}</h2>
-              <p><strong>{t("thCustomer")}:</strong> Acme Corp</p>
-              <p><strong>{t("deliveryDate")}:</strong> Nov 01, 2026</p>
-              <p><strong>{t("itemName")}:</strong> Stainless Steel Bottle 500ml</p>
-              <p><strong>{t("decoMethod")}:</strong> Laser Engraving</p>
-              <p><strong>{t("quantityTiers")}:</strong> 150 / 250 / 500</p>
+              <p><strong>{t("thCustomer")}:</strong> {project.customerReference || "—"}</p>
+              <p><strong>{t("deliveryDate")}:</strong> {project.deliveryDate ? new Date(project.deliveryDate).toLocaleDateString() : "—"}</p>
+              {project.items.map((item) => (
+                <div key={item.id} style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid #f1f5f9" }}>
+                  <p><strong>{t("itemName")}:</strong> {item.name}</p>
+                  {item.decorationMethod && <p><strong>{t("decoMethod")}:</strong> {item.decorationMethod}</p>}
+                  <p><strong>{t("quantityTiers")}:</strong> {item.quantityTiers.map((qt) => qt.quantity).join(" / ")}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Right Column: Messaging Hub */}
           <div className={styles.column}>
             <div className={styles.card}>
+              <h2 className={styles.sectionTitle}>{t("attachFile")}</h2>
+              {attachments.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  {attachments.map((a) => (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}>
+                      <span>{a.fileName}</span>
+                      <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary-color)", fontSize: 12 }}>Download</a>
+                      <span style={{ marginLeft: "auto", color: "#94a3b8", fontSize: 11 }}>{new Date(a.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label style={{ display: "inline-block", padding: "8px 16px", background: "#f1f5f9", borderRadius: 4, cursor: uploadingFile ? "wait" : "pointer", fontSize: 13, fontWeight: 600 }}>
+                {uploadingFile ? "Uploading..." : "+ Upload File"}
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" style={{ display: "none" }} onChange={handleFileUpload} disabled={uploadingFile} />
+              </label>
+              <span style={{ fontSize: 12, color: "#94a3b8", marginLeft: 8 }}>PDF, JPG, PNG, GIF, WEBP (max 10MB)</span>
+            </div>
+
+            <div className={styles.card}>
               <h2 className={styles.sectionTitle}>{t("messagingNotes")}</h2>
-              
+
+              {project.rfqs.length > 0 && activeTab === "message" && (
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Supplier</label>
+                  <select
+                    value={selectedRfq}
+                    onChange={(e) => setSelectedRfq(e.target.value)}
+                    style={{ width: "100%", padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 4, fontSize: 13, fontFamily: "inherit" }}
+                  >
+                    {project.rfqs.map((rfq) => (
+                      <option key={rfq.id} value={rfq.id}>{rfq.supplier.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className={styles.chatBox}>
-                
-                {/* External Message from Supplier */}
-                <div className={styles.messageGroup}>
-                  <div className={styles.messageHeader}>
-                    <strong>Jane Doe (Acme Promos GmbH)</strong>
-                    <span>Oct 11, 10:20</span>
-                  </div>
-                  <div className={styles.messageBubble}>
-                    Can we offer a 600ml bottle instead? The 500ml is out of stock until December.
-                  </div>
-                </div>
-
-                {/* Internal Note */}
-                <div className={`${styles.messageGroup} ${styles.internalNote}`}>
-                  <div className={styles.messageHeader}>
-                    <strong>Super Admin</strong>
-                    <span className={styles.internalBadge}>{t("internalNote")}</span>
-                    <span>Oct 11, 10:30</span>
-                  </div>
-                  <div className={styles.messageBubble}>
-                    Called customer. They are okay with 600ml as long as the price stays under €5.00 net.
-                  </div>
-                </div>
-
-                {/* External Message to Supplier */}
-                <div className={`${styles.messageGroup} ${styles.outgoing}`}>
-                  <div className={styles.messageHeader}>
-                    <strong>Super Admin (You)</strong>
-                    <span>Oct 11, 10:35</span>
-                  </div>
-                  <div className={styles.messageBubble}>
-                    Yes, 600ml is acceptable. Please submit your quote for the 600ml option and leave a comment in the form.
-                  </div>
-                </div>
-
+                {activeTab === "note" ? (
+                  notes.length === 0 ? (
+                    <div style={{ padding: "20px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>
+                      No internal notes yet.
+                    </div>
+                  ) : (
+                    notes.map((note) => (
+                      <div key={note.id} className={`${styles.messageGroup} ${styles.internalNote}`}>
+                        <div className={styles.messageHeader}>
+                          <strong>{note.user?.fullName || note.user?.email}</strong>
+                          <span className={styles.internalBadge}>{t("internalNote")}</span>
+                          <span>{new Date(note.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div className={styles.messageBubble}>{note.content}</div>
+                      </div>
+                    ))
+                  )
+                ) : (
+                  messages.length === 0 ? (
+                    <div style={{ padding: "20px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>
+                      No messages with this supplier yet.
+                    </div>
+                  ) : (
+                    messages.map((msg) => (
+                      <div key={msg.id} className={`${styles.messageGroup} ${msg.senderType === "supplier" ? "" : styles.outgoing}`}>
+                        <div className={styles.messageHeader}>
+                          <strong>{msg.senderName || (msg.senderType === "supplier" ? "Supplier" : "You")}</strong>
+                          <span>{new Date(msg.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div className={styles.messageBubble}>{msg.content}</div>
+                      </div>
+                    ))
+                  )
+                )}
               </div>
 
               <div className={styles.replyBox}>
                 <div className={styles.tabs}>
-                  <button className={`${styles.tab} ${styles.activeTab}`}>{t("replySupplier")}</button>
-                  <button className={`${styles.tab} ${styles.internalTab}`}>{t("addInternalNote")}</button>
-                </div>
-                <select className={styles.replySelect}>
-                  <option>To: Acme Promos GmbH</option>
-                  <option>To: Printify Europe</option>
-                  <option>To: Global Merch</option>
-                </select>
-                <textarea rows={3} placeholder="Type your message..." className={styles.replyTextarea}></textarea>
-                <div className={styles.replyActions}>
-                  <input type="file" id="attachFile" style={{ display: 'none' }} />
-                  <button 
-                    className={styles.btnSecondary} 
-                    onClick={() => document.getElementById('attachFile')?.click()}
+                  <button
+                    className={`${styles.tab} ${activeTab === "message" ? styles.activeTab : ""}`}
+                    onClick={() => setActiveTab("message")}
+                    style={activeTab === "message" ? { background: "#e0f2fe", color: "#0369a1" } : {}}
                   >
-                    {t("attachFile")}
+                    {t("replySupplier")}
                   </button>
-                  <button className={styles.btnPrimary}>{t("sendMessage")}</button>
+                  <button
+                    className={`${styles.tab} ${activeTab === "note" ? styles.internalTab : ""}`}
+                    onClick={() => setActiveTab("note")}
+                    style={activeTab === "note" ? { background: "#fef3c7", color: "#92400e" } : {}}
+                  >
+                    {t("addInternalNote")}
+                  </button>
+                </div>
+                <textarea
+                  rows={3}
+                  placeholder={activeTab === "note" ? "Add an internal note..." : "Type a message to the supplier..."}
+                  className={styles.replyTextarea}
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                ></textarea>
+                <div className={styles.replyActions}>
+                  <button
+                    className={styles.btnPrimary}
+                    onClick={handleSend}
+                    disabled={sending || !replyText.trim()}
+                  >
+                    {sending ? "Sending..." : activeTab === "note" ? "Add Note" : t("sendMessage")}
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

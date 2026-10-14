@@ -5,17 +5,81 @@ import styles from "./page.module.css";
 import Link from "next/link";
 import { useLanguage } from "../../../../context/LanguageContext";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+interface Contact {
+  key: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  isPrimary: boolean;
+}
 
 export default function CreateSupplierPage() {
   const { t } = useLanguage();
-  const [contacts, setContacts] = useState([1]);
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+
+  const [name, setName] = useState("");
+  const [erpId, setErpId] = useState("");
+  const [language, setLanguage] = useState("de");
+  const [categoriesText, setCategoriesText] = useState("");
+  const [contacts, setContacts] = useState<Contact[]>([
+    { key: 1, firstName: "", lastName: "", email: "", phone: "", isPrimary: true },
+  ]);
 
   const handleAddContact = () => {
-    setContacts([...contacts, Date.now()]);
+    setContacts([
+      ...contacts,
+      { key: Date.now(), firstName: "", lastName: "", email: "", phone: "", isPrimary: false },
+    ]);
   };
 
-  const handleRemoveContact = (indexToRemove: number) => {
-    setContacts(contacts.filter((_, index) => index !== indexToRemove));
+  const handleRemoveContact = (idx: number) => {
+    setContacts(contacts.filter((_, i) => i !== idx));
+  };
+
+  const updateContact = (idx: number, field: keyof Contact, value: string | boolean) => {
+    setContacts(contacts.map((c, i) => (i === idx ? { ...c, [field]: value } : c)));
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) return alert("Company name is required");
+    if (!contacts[0]?.email) return alert("At least one contact with email is required");
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/suppliers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          externalSupplierId: erpId.trim() || undefined,
+          language,
+          categoryNames: categoriesText
+            .split(",")
+            .map((c) => c.trim())
+            .filter(Boolean),
+          contacts: contacts.map((c) => ({
+            firstName: c.firstName.trim(),
+            lastName: c.lastName.trim(),
+            email: c.email.trim(),
+            phone: c.phone.trim() || null,
+            isPrimary: c.isPrimary,
+          })),
+        }),
+      });
+
+      if (res.ok) {
+        router.push("/suppliers");
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to create supplier");
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -24,9 +88,9 @@ export default function CreateSupplierPage() {
         <Link href="/suppliers">
           <button className={styles.btnSecondary}>{t("cancel")}</button>
         </Link>
-        <Link href="/suppliers">
-          <button className={styles.btnPrimary}>{t("saveSupplier")}</button>
-        </Link>
+        <button className={styles.btnPrimary} onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : t("saveSupplier")}
+        </button>
       </Topbar>
 
       <div className={styles.content}>
@@ -35,23 +99,27 @@ export default function CreateSupplierPage() {
           <div className={styles.grid}>
             <div className={styles.inputGroup}>
               <label>{t("companyName")}</label>
-              <input type="text" placeholder="e.g. Acme Promos GmbH" />
+              <input type="text" placeholder="e.g. Acme Promos GmbH" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className={styles.inputGroup}>
               <label>{t("erpId")}</label>
-              <input type="text" placeholder="e.g. ERP-9923" />
+              <input type="text" placeholder="e.g. ERP-9923" value={erpId} onChange={(e) => setErpId(e.target.value)} />
             </div>
             <div className={styles.inputGroup}>
               <label>{t("defaultLang")}</label>
-              <select>
-                <option>English</option>
-                <option>German</option>
-                <option>French</option>
+              <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                <option value="en">English</option>
+                <option value="de">German</option>
               </select>
             </div>
             <div className={styles.inputGroup}>
               <label>{t("productCats")}</label>
-              <input type="text" placeholder="e.g. Water Bottles, Apparel, Pens" />
+              <input
+                type="text"
+                placeholder="e.g. Water Bottles, Apparel, Pens"
+                value={categoriesText}
+                onChange={(e) => setCategoriesText(e.target.value)}
+              />
             </div>
           </div>
         </div>
@@ -63,9 +131,9 @@ export default function CreateSupplierPage() {
           </div>
 
           {contacts.map((contact, index) => (
-            <div key={contact} className={styles.contactCard} style={{ marginTop: index > 0 ? "1rem" : "0", position: "relative" }}>
+            <div key={contact.key} className={styles.contactCard} style={{ marginTop: index > 0 ? "1rem" : "0", position: "relative" }}>
               {index > 0 && (
-                <button 
+                <button
                   onClick={() => handleRemoveContact(index)}
                   style={{ position: "absolute", top: "1.25rem", right: "1.5rem", background: "none", border: "none", color: "var(--danger-color, #ef4444)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                   title="Remove Contact"
@@ -80,23 +148,27 @@ export default function CreateSupplierPage() {
               <div className={styles.grid}>
                 <div className={styles.inputGroup}>
                   <label>{t("firstName")}</label>
-                  <input type="text" placeholder="Jane" />
+                  <input type="text" placeholder="Jane" value={contact.firstName} onChange={(e) => updateContact(index, "firstName", e.target.value)} />
                 </div>
                 <div className={styles.inputGroup}>
                   <label>{t("lastName")}</label>
-                  <input type="text" placeholder="Doe" />
+                  <input type="text" placeholder="Doe" value={contact.lastName} onChange={(e) => updateContact(index, "lastName", e.target.value)} />
                 </div>
                 <div className={styles.inputGroup}>
                   <label>{t("emailAddr")}</label>
-                  <input type="email" placeholder="jane@acmepromos.de" />
+                  <input type="email" placeholder="jane@acmepromos.de" value={contact.email} onChange={(e) => updateContact(index, "email", e.target.value)} />
                 </div>
                 <div className={styles.inputGroup}>
                   <label>{t("phoneNum")}</label>
-                  <input type="tel" placeholder="+49 123 456789" />
+                  <input type="tel" placeholder="+49 123 456789" value={contact.phone} onChange={(e) => updateContact(index, "phone", e.target.value)} />
                 </div>
               </div>
               <label className={styles.checkboxLabel}>
-                <input type="checkbox" defaultChecked={index === 0} />
+                <input
+                  type="checkbox"
+                  checked={contact.isPrimary}
+                  onChange={(e) => updateContact(index, "isPrimary", e.target.checked)}
+                />
                 {t("primaryContact")}
               </label>
             </div>

@@ -5,13 +5,12 @@ import { usePathname } from "next/navigation";
 import styles from "./Sidebar.module.css";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
-
 import { useState } from "react";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
-  const { role, logout } = useAuth();
+  const { role, user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
@@ -20,10 +19,16 @@ export default function Sidebar() {
     ...(role === "ADMIN" ? [
       { label: t("suppliers"), href: "/suppliers" }
     ] : []),
+    ...(role === "ADMIN" ? [
+      { label: t("auditLog"), href: "/audit-log" }
+    ] : []),
+    ...(role === "ADMIN" ? [
+      { label: t("userManagement"), href: "/users" }
+    ] : []),
     { label: t("settings"), href: "/settings" }
   ];
 
-  const roleLabels = {
+  const roleLabels: Record<string, string> = {
     "ADMIN": t("roleAdmin"),
     "INTERNAL_SALES": "Internal Sales",
     "FIELD_SALES": "Field Sales"
@@ -63,7 +68,8 @@ export default function Sidebar() {
         </nav>
 
         <div className={`${styles.footer} ${isOpen ? styles.footerOpen : ""}`}>
-          <div className={styles.userEmail}>{role?.toLowerCase()}@supplier-rfq.com</div>
+          <div className={styles.userName}>{user?.fullName || "User"}</div>
+          <div className={styles.userEmail}>{user?.email || ""}</div>
           <button className={styles.logoutBtn} onClick={logout}>{t("logout")}</button>
         </div>
       </aside>

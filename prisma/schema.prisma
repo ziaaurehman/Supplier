@@ -1,0 +1,344 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  INTERNAL_SALES
+  FIELD_SALES
+
+  @@map("user_role")
+}
+
+enum RfqStatus {
+  draft
+  sent
+  opened
+  quoted
+  declined
+  expired
+
+  @@map("rfq_status")
+}
+
+enum ProjectStatus {
+  draft
+  rfqs_sent
+  quoting
+  completed
+  cancelled
+
+  @@map("project_status")
+}
+
+enum DecorationCostType {
+  per_unit
+  flat_rate
+
+  @@map("decoration_cost_type")
+}
+
+enum DeclineReason {
+  not_in_range
+  quantity_too_small
+  deadline_not_feasible
+  no_capacity
+  other
+
+  @@map("decline_reason")
+}
+
+enum CounterOfferStatus {
+  pending
+  accepted
+  declined
+  countered
+
+  @@map("counter_offer_status")
+}
+
+model User {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authId    String?  @unique @map("auth_id") @db.Uuid
+  email     String   @unique
+  fullName  String   @map("full_name")
+  role      UserRole @default(INTERNAL_SALES)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  projects      Project[]
+  messages      Message[]
+  internalNotes InternalNote[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model Supplier {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  language           String   @default("de")
+  isActive           Boolean  @default(true) @map("is_active")
+  externalSupplierId String?  @map("external_supplier_id")
+  customerNumber     String?  @map("customer_number")
+  notes              String?
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  contacts   SupplierContact[]
+  categories SupplierCategory[]
+  rfqs       Rfq[]
+
+  @@map("suppliers")
+}
+
+model SupplierContact {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supplierId String   @map("supplier_id") @db.Uuid
+  firstName  String   @map("first_name")
+  lastName   String   @map("last_name")
+  email      String
+  phone      String?
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@map("supplier_contacts")
+}
+
+model Category {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  suppliers SupplierCategory[]
+
+  @@map("categories")
+}
+
+model SupplierCategory {
+  supplierId String @map("supplier_id") @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([supplierId, categoryId])
+  @@map("supplier_categories")
+}
+
+model Project {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectNumber         String        @unique @default("") @map("project_number")
+  title                 String
+  customerName          String        @map("customer_name")
+  status                ProjectStatus @default(draft)
+  quoteDeadline         DateTime      @map("quote_deadline") @db.Date
+  requestedDeliveryDate DateTime?     @map("requested_delivery_date") @db.Date
+  internalDescription   String?       @map("internal_description")
+  createdBy             String?       @map("created_by") @db.Uuid
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  creator       User?          @relation(fields: [createdBy], references: [id])
+  items         ProjectItem[]
+  rfqs          Rfq[]
+  internalNotes InternalNote[]
+  attachments   Attachment[]
+
+  @@map("projects")
+}
+
+model ProjectItem {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId          String   @map("project_id") @db.Uuid
+  name               String
+  description        String?
+  decorationMethod   String?  @map("decoration_method")
+  numberOfColors     Int?     @map("number_of_colors")
+  printArea          String?  @map("print_area")
+  materialPreference String?  @map("material_preference")
+  sortOrder          Int      @default(0) @map("sort_order")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  project       Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  quantityTiers ProjectItemQuantityTier[]
+  quotes        Quote[]
+  attachments   Attachment[]
+
+  @@map("project_items")
+}
+
+model ProjectItemQuantityTier {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectItemId String @map("project_item_id") @db.Uuid
+  quantity      Int
+  sortOrder     Int    @default(0) @map("sort_order")
+
+  projectItem ProjectItem @relation(fields: [projectItemId], references: [id], onDelete: Cascade)
+
+  @@map("project_item_quantity_tiers")
+}
+
+model Rfq {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId        String        @map("project_id") @db.Uuid
+  supplierId       String        @map("supplier_id") @db.Uuid
+  token            String        @unique @default(dbgenerated("encode(gen_random_bytes(32), 'hex')"))
+  tokenExpiresAt   DateTime      @default(dbgenerated("(now() + interval '90 days')")) @map("token_expires_at") @db.Timestamptz
+  status           RfqStatus     @default(draft)
+  sentAt           DateTime?     @map("sent_at") @db.Timestamptz
+  openedAt         DateTime?     @map("opened_at") @db.Timestamptz
+  respondedAt      DateTime?     @map("responded_at") @db.Timestamptz
+  reminderCount    Int           @default(0) @map("reminder_count")
+  lastReminderAt   DateTime?     @map("last_reminder_at") @db.Timestamptz
+  declineReason    DeclineReason? @map("decline_reason")
+  declineReasonText String?      @map("decline_reason_text")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  quotes        Quote[]
+  messages      Message[]
+  internalNotes InternalNote[]
+  attachments   Attachment[]
+
+  @@unique([projectId, supplierId])
+  @@map("rfqs")
+}
+
+model Quote {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfqId              String             @map("rfq_id") @db.Uuid
+  projectItemId      String             @map("project_item_id") @db.Uuid
+  currency           String             @default("EUR")
+  setupCost          Decimal            @default(0) @map("setup_cost") @db.Decimal(12, 2)
+  decorationCost     Decimal            @default(0) @map("decoration_cost") @db.Decimal(12, 2)
+  decorationCostType DecorationCostType @default(flat_rate) @map("decoration_cost_type")
+  freightCost        Decimal            @default(0) @map("freight_cost") @db.Decimal(12, 2)
+  sampleCost         Decimal?           @default(0) @map("sample_cost") @db.Decimal(12, 2)
+  leadTimeDays       Int?               @map("lead_time_days")
+  minimumOrderQty    Int?               @map("minimum_order_quantity")
+  priceValidUntil    DateTime?          @map("price_valid_until") @db.Date
+  alternativeProduct String?            @map("alternative_product")
+  countryOfOrigin    String?            @map("country_of_origin")
+  supplierItemNumber String?            @map("supplier_item_number")
+  comment            String?
+  isWinner           Boolean            @default(false) @map("is_winner")
+  submittedAt        DateTime           @default(now()) @map("submitted_at") @db.Timestamptz
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  rfq           Rfq              @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  projectItem   ProjectItem      @relation(fields: [projectItemId], references: [id])
+  priceTiers    QuotePriceTier[]
+  counterOffers CounterOffer[]
+  attachments   Attachment[]
+
+  @@map("quotes")
+}
+
+model QuotePriceTier {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteId   String   @map("quote_id") @db.Uuid
+  quantity  Int
+  unitPrice Decimal  @map("unit_price") @db.Decimal(12, 2)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("quote_price_tiers")
+}
+
+model CounterOffer {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteId         String             @map("quote_id") @db.Uuid
+  offeredByInternal Boolean          @default(true) @map("offered_by_internal")
+  status          CounterOfferStatus @default(pending)
+  unitPrices      Json               @map("unit_prices")
+  setupCost       Decimal?           @map("setup_cost") @db.Decimal(12, 2)
+  decorationCost  Decimal?           @map("decoration_cost") @db.Decimal(12, 2)
+  freightCost     Decimal?           @map("freight_cost") @db.Decimal(12, 2)
+  message         String?
+  respondedAt     DateTime?          @map("responded_at") @db.Timestamptz
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("counter_offers")
+}
+
+model Message {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rfqId        String   @map("rfq_id") @db.Uuid
+  senderType   String   @map("sender_type")
+  senderUserId String?  @map("sender_user_id") @db.Uuid
+  content      String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  rfq    Rfq   @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  sender User? @relation(fields: [senderUserId], references: [id])
+
+  @@map("messages")
+}
+
+model InternalNote {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  rfqId     String?  @map("rfq_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rfq     Rfq?    @relation(fields: [rfqId], references: [id], onDelete: SetNull)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("internal_notes")
+}
+
+model Attachment {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId          String?  @map("project_id") @db.Uuid
+  projectItemId      String?  @map("project_item_id") @db.Uuid
+  rfqId              String?  @map("rfq_id") @db.Uuid
+  quoteId            String?  @map("quote_id") @db.Uuid
+  fileName           String   @map("file_name")
+  fileUrl            String   @map("file_url")
+  fileSize           Int?     @map("file_size")
+  mimeType           String?  @map("mime_type")
+  visibleToSupplier  Boolean  @default(false) @map("visible_to_supplier")
+  uploadedBySupplier Boolean  @default(false) @map("uploaded_by_supplier")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectItem ProjectItem? @relation(fields: [projectItemId], references: [id], onDelete: Cascade)
+  rfq         Rfq?         @relation(fields: [rfqId], references: [id], onDelete: SetNull)
+  quote       Quote?       @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+
+  @@map("attachments")
+}
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id") @db.Uuid
+  details    Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
