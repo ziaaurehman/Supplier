@@ -30,8 +30,8 @@ export default function Sidebar() {
 
   const roleLabels: Record<string, string> = {
     "ADMIN": t("roleAdmin"),
-    "INTERNAL_SALES": "Internal Sales",
-    "FIELD_SALES": "Field Sales"
+    "INTERNAL_SALES": t("roleInternalSales"),
+    "FIELD_SALES": t("roleFieldSales"),
   };
 
   const currentRoleLabel = role ? roleLabels[role] : "";

@@ -49,9 +49,9 @@ export default function EditSupplierPage({ params }: { params: Promise<{ id: str
           }))
         );
       })
-      .catch(() => alert("Failed to load supplier"))
+      .catch(() => alert(t("failedLoad")))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   const handleAddContact = () => {
     setContacts([...contacts, { key: Date.now(), firstName: "", lastName: "", email: "", phone: "", isPrimary: false }]);
@@ -66,7 +66,7 @@ export default function EditSupplierPage({ params }: { params: Promise<{ id: str
   };
 
   const handleSave = async () => {
-    if (!name.trim()) return alert("Company name is required");
+    if (!name.trim()) return alert(t("companyNameRequired"));
     setSaving(true);
     try {
       const res = await fetch(`/api/suppliers/${id}`, {
@@ -90,7 +90,7 @@ export default function EditSupplierPage({ params }: { params: Promise<{ id: str
         router.push("/suppliers");
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to update supplier");
+        alert(data.error || t("failedUpdate"));
       }
     } finally {
       setSaving(false);
@@ -100,20 +100,20 @@ export default function EditSupplierPage({ params }: { params: Promise<{ id: str
   if (loading) {
     return (
       <div>
-        <Topbar title="Edit Supplier" subtitle="Loading..." backUrl="/suppliers" />
-        <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>
+        <Topbar title={t("editSupplierTitle")} subtitle={t("loading")} backUrl="/suppliers" />
+        <div style={{ padding: 40, textAlign: "center" }}>{t("loading")}</div>
       </div>
     );
   }
 
   return (
     <div>
-      <Topbar title="Edit Supplier" subtitle={`Editing ${name}`} backUrl="/suppliers">
+      <Topbar title={t("editSupplierTitle")} subtitle={t("editSupplierSubtitle")} backUrl="/suppliers">
         <Link href="/suppliers">
           <button className={styles.btnSecondary}>{t("cancel")}</button>
         </Link>
         <button className={styles.btnPrimary} onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : t("saveSupplier")}
+          {saving ? t("saving") : t("saveSupplier")}
         </button>
       </Topbar>
 
@@ -133,7 +133,7 @@ export default function EditSupplierPage({ params }: { params: Promise<{ id: str
               <label>{t("defaultLang")}</label>
               <select value={language} onChange={(e) => setLanguage(e.target.value)}>
                 <option value="en">English</option>
-                <option value="de">German</option>
+                <option value="de">Deutsch</option>
               </select>
             </div>
             <div className={styles.inputGroup}>

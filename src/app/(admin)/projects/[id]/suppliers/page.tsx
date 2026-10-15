@@ -52,7 +52,7 @@ export default function SupplierSelectionPage({ params }: { params: Promise<{ id
   };
 
   const handleSendRFQs = async () => {
-    if (selected.size === 0) return alert("Select at least one supplier");
+    if (selected.size === 0) return alert(t("selectAtLeastOne"));
     setSending(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/rfqs`, {
@@ -68,7 +68,7 @@ export default function SupplierSelectionPage({ params }: { params: Promise<{ id
         router.push(`/projects/${projectId}`);
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to send RFQs");
+        alert(data.error || t("failedSendRfqs"));
       }
     } finally {
       setSending(false);
@@ -77,12 +77,12 @@ export default function SupplierSelectionPage({ params }: { params: Promise<{ id
 
   return (
     <div>
-      <Topbar title="Select Suppliers" subtitle="Choose who will receive this enquiry" backUrl={`/projects/${projectId}`}>
+      <Topbar title={t("selectSuppliers")} subtitle={t("selectSuppliersSubtitle")} backUrl={`/projects/${projectId}`}>
         <button className={styles.btnSecondary} onClick={() => router.push(`/projects/${projectId}`)}>
           {t("saveDraft")}
         </button>
         <button className={styles.btnPrimary} onClick={handleSendRFQs} disabled={sending}>
-          {sending ? "Sending..." : t("sendRFQs")} ({selected.size})
+          {sending ? t("sending") : t("sendRFQs")} ({selected.size})
         </button>
       </Topbar>
 
@@ -91,22 +91,22 @@ export default function SupplierSelectionPage({ params }: { params: Promise<{ id
           <div className={styles.filterBar}>
             <input
               type="text"
-              placeholder="Search supplier name..."
+              placeholder={t("searchSupplierName")}
               className={styles.searchInput}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <select className={styles.filterSelect} value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="">Category: All</option>
+              <option value="">{t("categoryAll")}</option>
               {categories.map((c) => (
-                <option key={c} value={c}>Category: {c}</option>
+                <option key={c} value={c}>{c}</option>
               ))}
             </select>
           </div>
 
           <div className={styles.tableResponsive}>
             {loading ? (
-              <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Loading suppliers...</div>
+              <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>{t("loadingSuppliers")}</div>
             ) : (
               <table className={styles.table}>
                 <thead>
@@ -133,7 +133,7 @@ export default function SupplierSelectionPage({ params }: { params: Promise<{ id
                           <span key={c.category.name} className={styles.tag}>{c.category.name}</span>
                         ))}
                       </td>
-                      <td>{s.language === "de" ? "German" : "English"}</td>
+                      <td>{s.language === "de" ? t("german") : t("english")}</td>
                     </tr>
                   ))}
                 </tbody>

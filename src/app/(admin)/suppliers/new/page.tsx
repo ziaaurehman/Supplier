@@ -45,8 +45,8 @@ export default function CreateSupplierPage() {
   };
 
   const handleSave = async () => {
-    if (!name.trim()) return alert("Company name is required");
-    if (!contacts[0]?.email) return alert("At least one contact with email is required");
+    if (!name.trim()) return alert(t("companyNameRequired"));
+    if (!contacts[0]?.email) return alert(t("contactEmailRequired"));
 
     setSaving(true);
     try {
@@ -75,7 +75,7 @@ export default function CreateSupplierPage() {
         router.push("/suppliers");
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to create supplier");
+        alert(data.error || t("failedCreate"));
       }
     } finally {
       setSaving(false);
@@ -89,7 +89,7 @@ export default function CreateSupplierPage() {
           <button className={styles.btnSecondary}>{t("cancel")}</button>
         </Link>
         <button className={styles.btnPrimary} onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : t("saveSupplier")}
+          {saving ? t("saving") : t("saveSupplier")}
         </button>
       </Topbar>
 
@@ -109,7 +109,7 @@ export default function CreateSupplierPage() {
               <label>{t("defaultLang")}</label>
               <select value={language} onChange={(e) => setLanguage(e.target.value)}>
                 <option value="en">English</option>
-                <option value="de">German</option>
+                <option value="de">Deutsch</option>
               </select>
             </div>
             <div className={styles.inputGroup}>
@@ -136,7 +136,6 @@ export default function CreateSupplierPage() {
                 <button
                   onClick={() => handleRemoveContact(index)}
                   style={{ position: "absolute", top: "1.25rem", right: "1.5rem", background: "none", border: "none", color: "var(--danger-color, #ef4444)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-                  title="Remove Contact"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 6h18"></path>

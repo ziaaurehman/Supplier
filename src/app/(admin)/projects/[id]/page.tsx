@@ -89,7 +89,7 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      alert("File size must be under 10MB");
+      alert(t("fileSizeLimit"));
       return;
     }
     setUploadingFile(true);
@@ -163,11 +163,11 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
 
   const rfqStatusLabel = (status: string) => {
     switch (status) {
-      case "sent": return "Sent";
-      case "opened": return "Opened";
+      case "sent": return t("rfqSent");
+      case "opened": return t("rfqOpened");
       case "quoted": return t("quoted");
       case "declined": return t("declined");
-      case "expired": return "Expired";
+      case "expired": return t("expired");
       default: return status;
     }
   };
@@ -175,8 +175,8 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
   if (loading || !project) {
     return (
       <div>
-        <Topbar title="Loading..." subtitle="" backUrl="/projects" />
-        <div style={{ padding: 40, textAlign: "center" }}>Loading project...</div>
+        <Topbar title={t("loading")} subtitle="" backUrl="/projects" />
+        <div style={{ padding: 40, textAlign: "center" }}>{t("loading")}</div>
       </div>
     );
   }
@@ -202,10 +202,10 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
           <button
             style={{ padding: "8px 16px", background: "#fff", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 4, cursor: "pointer", fontWeight: 600, fontSize: 13, fontFamily: "inherit" }}
             onClick={async () => {
-              if (!confirm("Cancel this project? It can be permanently deleted afterwards.")) return;
+              if (!confirm(t("cancelProjectConfirm"))) return;
               const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
               if (res.ok) router.push("/projects");
-              else alert("Failed to cancel project");
+              else alert(t("cancelProjectFail"));
             }}
           >
             {t("cancel")}
@@ -219,7 +219,7 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
             <div className={styles.card}>
               <h2 className={styles.sectionTitle}>{t("supplierStatus")}</h2>
               {project.rfqs.length === 0 ? (
-                <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>No RFQs sent yet. Select suppliers to send enquiries.</p>
+                <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>{t("noRfqsSent")}</p>
               ) : (
                 <ul className={styles.supplierList}>
                   {project.rfqs.map((rfq) => (
@@ -229,8 +229,8 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                         <span>
                           {rfq.status === "sent" && rfq.sentAt && `Sent: ${new Date(rfq.sentAt).toLocaleString()}`}
                           {rfq.status === "opened" && rfq.openedAt && `Opened: ${new Date(rfq.openedAt).toLocaleString()}`}
-                          {rfq.status === "quoted" && "Quote received"}
-                          {rfq.status === "declined" && "Declined"}
+                          {rfq.status === "quoted" && t("quoteReceived")}
+                          {rfq.status === "declined" && t("declined")}
                         </span>
                       </div>
                       <span className={rfqStatusClass(rfq.status)}>{rfqStatusLabel(rfq.status)}</span>
@@ -262,17 +262,17 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                   {attachments.map((a) => (
                     <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}>
                       <span>{a.fileName}</span>
-                      <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary-color)", fontSize: 12 }}>Download</a>
+                      <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary-color)", fontSize: 12 }}>{t("download")}</a>
                       <span style={{ marginLeft: "auto", color: "#94a3b8", fontSize: 11 }}>{new Date(a.createdAt).toLocaleDateString()}</span>
                     </div>
                   ))}
                 </div>
               )}
               <label style={{ display: "inline-block", padding: "8px 16px", background: "#f1f5f9", borderRadius: 4, cursor: uploadingFile ? "wait" : "pointer", fontSize: 13, fontWeight: 600 }}>
-                {uploadingFile ? "Uploading..." : "+ Upload File"}
+                {uploadingFile ? t("uploading") : t("uploadFile")}
                 <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" style={{ display: "none" }} onChange={handleFileUpload} disabled={uploadingFile} />
               </label>
-              <span style={{ fontSize: 12, color: "#94a3b8", marginLeft: 8 }}>PDF, JPG, PNG, GIF, WEBP (max 10MB)</span>
+              <span style={{ fontSize: 12, color: "#94a3b8", marginLeft: 8 }}>{t("fileTypes")}</span>
             </div>
 
             <div className={styles.card}>
@@ -280,7 +280,7 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
 
               {project.rfqs.length > 0 && activeTab === "message" && (
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Supplier</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>{t("supplierLabel")}</label>
                   <select
                     value={selectedRfq}
                     onChange={(e) => setSelectedRfq(e.target.value)}
@@ -297,7 +297,7 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                 {activeTab === "note" ? (
                   notes.length === 0 ? (
                     <div style={{ padding: "20px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>
-                      No internal notes yet.
+                      {t("noNotesYet")}
                     </div>
                   ) : (
                     notes.map((note) => (
@@ -314,7 +314,7 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                 ) : (
                   messages.length === 0 ? (
                     <div style={{ padding: "20px", textAlign: "center", color: "#94a3b8", fontSize: "0.85rem" }}>
-                      No messages with this supplier yet.
+                      {t("noMessagesYet")}
                     </div>
                   ) : (
                     messages.map((msg) => (
@@ -349,7 +349,7 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                 </div>
                 <textarea
                   rows={3}
-                  placeholder={activeTab === "note" ? "Add an internal note..." : "Type a message to the supplier..."}
+                  placeholder={activeTab === "note" ? t("addNotePlaceholder") : t("typeMessagePlaceholder")}
                   className={styles.replyTextarea}
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
@@ -360,7 +360,7 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                     onClick={handleSend}
                     disabled={sending || !replyText.trim()}
                   >
-                    {sending ? "Sending..." : activeTab === "note" ? "Add Note" : t("sendMessage")}
+                    {sending ? t("sending") : activeTab === "note" ? t("addNote") : t("sendMessage")}
                   </button>
                 </div>
               </div>

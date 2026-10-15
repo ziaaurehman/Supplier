@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const declineSchema = z.object({
   reason: z.enum(["not_in_range", "quantity_too_small", "deadline_not_feasible", "no_capacity", "other"]),
-  reasonText: z.string().optional(),
+  reasonText: z.string().nullable().optional(),
 });
 
 export async function POST(

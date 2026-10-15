@@ -21,17 +21,17 @@ interface Pagination {
   totalPages: number;
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  rfqs_sent: "RFQs Sent",
-  rfq_opened: "RFQ Opened",
-  quote_submitted: "Quote Submitted",
-  rfq_declined: "RFQ Declined",
-  counter_offer_sent: "Counter Offer Sent",
-  quote_edited: "Quote Edited",
-  winner_selected: "Winner Selected",
-  attachment_uploaded: "File Uploaded",
-  project_created: "Project Created",
-  supplier_created: "Supplier Created",
+const ACTION_LABEL_KEYS: Record<string, string> = {
+  rfqs_sent: "actionRfqsSent",
+  rfq_opened: "actionRfqOpened",
+  quote_submitted: "actionQuoteSubmitted",
+  rfq_declined: "actionRfqDeclined",
+  counter_offer_sent: "actionCounterOfferSent",
+  quote_edited: "actionQuoteEdited",
+  winner_selected: "actionWinnerSelected",
+  attachment_uploaded: "actionFileUploaded",
+  project_created: "actionProjectCreated",
+  supplier_created: "actionSupplierCreated",
 };
 
 const ACTION_COLORS: Record<string, string> = {
@@ -85,14 +85,14 @@ export default function AuditLogPage() {
               fontFamily: "inherit",
             }}
           >
-            <option value="">All Actions</option>
-            {Object.entries(ACTION_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
+            <option value="">{t("allActions")}</option>
+            {Object.entries(ACTION_LABEL_KEYS).map(([key, labelKey]) => (
+              <option key={key} value={key}>{t(labelKey as Parameters<typeof t>[0])}</option>
             ))}
           </select>
           {pagination && (
             <span style={{ fontSize: 13, color: "#64748b", alignSelf: "center" }}>
-              {pagination.total} entries
+              {pagination.total} {t("entries")}
             </span>
           )}
         </div>
@@ -108,7 +108,7 @@ export default function AuditLogPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {["Time", "User", "Action", "Entity", "Details"].map((h) => (
+                {[t("thTime"), t("thUserCol"), t("thActionCol"), t("thEntity"), t("thDetails")].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -130,14 +130,14 @@ export default function AuditLogPage() {
               {loading && (
                 <tr>
                   <td colSpan={5} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
-                    Loading...
+                    {t("loading")}
                   </td>
                 </tr>
               )}
               {!loading && logs.length === 0 && (
                 <tr>
                   <td colSpan={5} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
-                    No audit log entries found.
+                    {t("noAuditLogs")}
                   </td>
                 </tr>
               )}
@@ -147,7 +147,7 @@ export default function AuditLogPage() {
                     {new Date(log.createdAt).toLocaleString()}
                   </td>
                   <td style={{ padding: "10px 16px", fontSize: 13 }}>
-                    {log.user?.fullName || <span style={{ color: "#94a3b8" }}>System</span>}
+                    {log.user?.fullName || <span style={{ color: "#94a3b8" }}>{t("system")}</span>}
                   </td>
                   <td style={{ padding: "10px 16px" }}>
                     <span
@@ -161,7 +161,7 @@ export default function AuditLogPage() {
                         color: ACTION_COLORS[log.action] || "#64748b",
                       }}
                     >
-                      {ACTION_LABELS[log.action] || log.action}
+                      {ACTION_LABEL_KEYS[log.action] ? t(ACTION_LABEL_KEYS[log.action] as Parameters<typeof t>[0]) : log.action}
                     </span>
                   </td>
                   <td style={{ padding: "10px 16px", fontSize: 13, color: "#64748b" }}>
@@ -196,10 +196,10 @@ export default function AuditLogPage() {
                 fontFamily: "inherit",
               }}
             >
-              Previous
+              {t("previous")}
             </button>
             <span style={{ alignSelf: "center", fontSize: 13, color: "#64748b" }}>
-              Page {page} of {pagination.totalPages}
+              {page} / {pagination.totalPages}
             </span>
             <button
               onClick={() => setPage(Math.min(pagination.totalPages, page + 1))}
@@ -214,7 +214,7 @@ export default function AuditLogPage() {
                 fontFamily: "inherit",
               }}
             >
-              Next
+              {t("next")}
             </button>
           </div>
         )}

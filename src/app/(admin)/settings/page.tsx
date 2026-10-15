@@ -49,7 +49,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ emailFrom, sendingDomain, companyName }),
       });
       if (res.ok) setEmailSaved(true);
-      else alert("Failed to save settings");
+      else alert(t("failedSaveSettings"));
     } finally {
       setSavingEmail(false);
       setTimeout(() => setEmailSaved(false), 3000);
@@ -73,7 +73,7 @@ export default function SettingsPage() {
               <input type="email" defaultValue={user?.email || ""} readOnly />
             </div>
             <div className={styles.inputGroup}>
-              <label>Role</label>
+              <label>{t("role")}</label>
               <input type="text" defaultValue={currentRoleLabel} readOnly />
             </div>
           </div>
@@ -100,7 +100,7 @@ export default function SettingsPage() {
             <h2 className={styles.sectionTitle}>{t("emailConfig")}</h2>
             <div className={styles.grid}>
               <div className={styles.inputGroup}>
-                <label>Company Name</label>
+                <label>{t("companyName")}</label>
                 <input
                   type="text"
                   value={companyName}
@@ -118,7 +118,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div className={styles.inputGroup}>
-                <label>From Email Address</label>
+                <label>{t("fromEmailAddress")}</label>
                 <input
                   type="email"
                   value={emailFrom}
@@ -133,10 +133,10 @@ export default function SettingsPage() {
                 onClick={handleSaveEmail}
                 disabled={savingEmail}
               >
-                {savingEmail ? "Saving..." : t("saveEmail")}
+                {savingEmail ? t("saving") : t("saveEmail")}
               </button>
               {emailSaved && (
-                <span style={{ color: "#059669", fontSize: 13, fontWeight: 600 }}>Saved!</span>
+                <span style={{ color: "#059669", fontSize: 13, fontWeight: 600 }}>{t("saved")}</span>
               )}
             </div>
           </div>

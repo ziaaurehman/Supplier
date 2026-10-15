@@ -62,8 +62,8 @@ export default function CreateProjectPage() {
   };
 
   const saveProject = async (proceed: boolean): Promise<string | null> => {
-    if (!title.trim()) { alert("Title is required"); return null; }
-    if (!items.some((i) => i.name.trim())) { alert("At least one item is required"); return null; }
+    if (!title.trim()) { alert(t("titleRequired")); return null; }
+    if (!items.some((i) => i.name.trim())) { alert(t("itemRequired")); return null; }
 
     setSaving(true);
     try {
@@ -96,7 +96,7 @@ export default function CreateProjectPage() {
         return data.project?.id || null;
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to create project");
+        alert(data.error || t("failedCreate"));
         return null;
       }
     } finally {
@@ -111,7 +111,7 @@ export default function CreateProjectPage() {
           {t("cancel")}
         </button>
         <button className={styles.btnPrimary} onClick={handleSaveAndProceed} disabled={saving}>
-          {saving ? "Saving..." : t("saveProceed")}
+          {saving ? t("saving") : t("saveProceed")}
         </button>
       </Topbar>
 
@@ -139,7 +139,7 @@ export default function CreateProjectPage() {
 
           <div className={styles.inputGroupFull}>
             <label>{t("internalDesc")}</label>
-            <textarea rows={3} placeholder="Add any internal notes here..." value={internalDesc} onChange={(e) => setInternalDesc(e.target.value)}></textarea>
+            <textarea rows={3} placeholder="" value={internalDesc} onChange={(e) => setInternalDesc(e.target.value)}></textarea>
           </div>
         </div>
 
@@ -152,7 +152,7 @@ export default function CreateProjectPage() {
           {items.map((item, index) => (
             <div key={item.key} className={styles.itemCard} style={{ marginTop: index > 0 ? "1rem" : "0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-                <div className={styles.itemHeader} style={{ marginBottom: 0 }}>Item {index + 1}</div>
+                <div className={styles.itemHeader} style={{ marginBottom: 0 }}>{t("item")} {index + 1}</div>
                 {index > 0 && (
                   <button
                     onClick={() => handleRemoveItem(index)}
@@ -184,7 +184,7 @@ export default function CreateProjectPage() {
 
               <div className={styles.inputGroupFull}>
                 <label>{t("itemDesc")}</label>
-                <textarea rows={2} placeholder="Color, material preference, etc." value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)}></textarea>
+                <textarea rows={2} placeholder="" value={item.description} onChange={(e) => updateItem(index, "description", e.target.value)}></textarea>
               </div>
 
               <div className={styles.tiersContainer}>
@@ -194,7 +194,7 @@ export default function CreateProjectPage() {
                     <input
                       key={ti}
                       type="number"
-                      placeholder={`Tier ${ti + 1} (e.g. ${[150, 250, 500][ti]})`}
+                      placeholder={`${ti + 1}. (e.g. ${[150, 250, 500][ti]})`}
                       value={tier}
                       onChange={(e) => updateTier(index, ti, e.target.value)}
                     />

@@ -52,9 +52,9 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
           }))
         );
       })
-      .catch(() => alert("Failed to load project"))
+      .catch(() => alert(t("failedLoad")))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -74,7 +74,7 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         router.push(`/projects/${id}`);
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to update project");
+        alert(data.error || t("failedUpdate"));
       }
     } finally {
       setSaving(false);
@@ -84,20 +84,20 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
   if (loading) {
     return (
       <div>
-        <Topbar title="Edit Project" subtitle="Loading..." backUrl="/projects" />
-        <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>
+        <Topbar title={t("editProjectTitle")} subtitle={t("loading")} backUrl="/projects" />
+        <div style={{ padding: 40, textAlign: "center" }}>{t("loading")}</div>
       </div>
     );
   }
 
   return (
     <div>
-      <Topbar title="Edit Project" subtitle={`Editing ${title}`} backUrl={`/projects/${id}`}>
+      <Topbar title={t("editProjectTitle")} subtitle={t("editProjectSubtitle")} backUrl={`/projects/${id}`}>
         <button className={styles.btnSecondary} onClick={() => router.push(`/projects/${id}`)}>
           {t("cancel")}
         </button>
         <button className={styles.btnPrimary} onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : t("saveProceed")}
+          {saving ? t("saving") : t("saveProceed")}
         </button>
       </Topbar>
 
@@ -130,12 +130,12 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
         </div>
 
         <div className={styles.formContainer}>
-          <h2 className={styles.sectionTitle}>{t("lineItems")} (read-only)</h2>
+          <h2 className={styles.sectionTitle}>{t("lineItemsReadOnly")}</h2>
           {items.map((item, index) => (
             <div key={item.key} className={styles.itemCard} style={{ marginTop: index > 0 ? "1rem" : "0", opacity: 0.8 }}>
-              <div className={styles.itemHeader}>Item {index + 1}: {item.name}</div>
+              <div className={styles.itemHeader}>{t("item")} {index + 1}: {item.name}</div>
               <p style={{ fontSize: "0.85rem", color: "#64748b" }}>
-                {item.decorationMethod} | Tiers: {item.tiers.filter(Boolean).join(" / ")}
+                {item.decorationMethod} | {t("quantityTiers")}: {item.tiers.filter(Boolean).join(" / ")}
               </p>
             </div>
           ))}

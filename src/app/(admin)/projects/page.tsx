@@ -41,9 +41,9 @@ export default function ProjectsPage() {
     draft: t("statusDraft"),
     rfqs_sent: t("statusSent"),
     quotes_received: t("quotesReceived"),
-    evaluation: "Evaluation",
+    evaluation: t("statusEvaluation"),
     completed: t("statusComplete"),
-    cancelled: "Cancelled",
+    cancelled: t("statusCancelled"),
   };
 
   return (
@@ -57,10 +57,10 @@ export default function ProjectsPage() {
       <div className={styles.content}>
         <div className={styles.tableContainer}>
           {loading ? (
-            <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Loading...</div>
+            <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>{t("loading")}</div>
           ) : projects.length === 0 ? (
             <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
-              No projects yet. Create your first project to get started.
+              {t("noProjectsYet")}
             </div>
           ) : (
             <table className={styles.table}>

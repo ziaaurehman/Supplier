@@ -3,7 +3,7 @@
 import styles from "./page.module.css";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -14,10 +14,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  if (role) {
-    router.push("/");
-    return null;
-  }
+  useEffect(() => {
+    if (role) router.push("/");
+  }, [role, router]);
+
+  if (role) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,13 +59,13 @@ export default function LoginPage() {
           </div>
 
           <div className={styles.inputGroup}>
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t("password")}</label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t("enterPassword")}
               required
               className={styles.input}
             />
@@ -75,7 +76,7 @@ export default function LoginPage() {
             className={`${styles.btn} ${styles.btnAdmin}`}
             disabled={isLoading}
           >
-            {isLoading ? "Signing in..." : t("welcomeBack")}
+            {isLoading ? t("signingIn") : t("welcomeBack")}
           </button>
         </form>
       </div>

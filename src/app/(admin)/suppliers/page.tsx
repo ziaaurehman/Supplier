@@ -45,10 +45,10 @@ export default function SuppliersPage() {
     const res = await fetch("/api/suppliers/import", { method: "POST", body: formData });
     const data = await res.json();
     if (res.ok) {
-      alert(`Imported ${data.imported} suppliers (${data.skipped} skipped)`);
+      alert(t("importedSuppliers").replace("{count}", data.imported).replace("{skipped}", data.skipped));
       fetchSuppliers();
     } else {
-      alert(data.error || "Import failed");
+      alert(data.error || t("importFailed"));
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -78,7 +78,7 @@ export default function SuppliersPage() {
         <div className={styles.searchBar}>
           <input
             type="text"
-            placeholder="Search suppliers..."
+            placeholder={t("searchSuppliers")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={styles.searchInput}
@@ -87,9 +87,9 @@ export default function SuppliersPage() {
 
         <div className={styles.tableContainer}>
           {loading ? (
-            <div className={styles.emptyState}>Loading...</div>
+            <div className={styles.emptyState}>{t("loading")}</div>
           ) : suppliers.length === 0 ? (
-            <div className={styles.emptyState}>No suppliers found. Add your first supplier or import via CSV.</div>
+            <div className={styles.emptyState}>{t("noSuppliersYet")}</div>
           ) : (
             <table className={styles.table}>
               <thead>
@@ -117,7 +117,7 @@ export default function SuppliersPage() {
                       </td>
                       <td>
                         <span className={s.isActive ? styles.statusActive : styles.statusInactive}>
-                          {s.isActive ? "Active" : "Inactive"}
+                          {s.isActive ? t("active") : t("inactive")}
                         </span>
                       </td>
                       <td>

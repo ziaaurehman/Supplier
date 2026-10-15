@@ -61,7 +61,7 @@ export default function UsersPage() {
         fetchUsers();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to create user");
+        alert(data.error || t("error"));
       }
     } finally {
       setSaving(false);
@@ -96,17 +96,16 @@ export default function UsersPage() {
           onClick={() => setShowForm(!showForm)}
           style={{ padding: "8px 20px", background: "var(--primary-color)", color: "#fff", border: "none", borderRadius: 4, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
         >
-          + Add User
+          {t("addUser")}
         </button>
       </Topbar>
 
       <div style={{ padding: 40 }}>
         {showForm && (
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: 24, marginBottom: 24 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: "var(--primary-color)" }}>New User</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Full Name</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>{t("fullName")}</label>
                 <input
                   type="text"
                   value={formData.fullName}
@@ -116,7 +115,7 @@ export default function UsersPage() {
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Email</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>{t("emailAddr")}</label>
                 <input
                   type="email"
                   value={formData.email}
@@ -126,7 +125,7 @@ export default function UsersPage() {
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Role</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>{t("userRole")}</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
@@ -144,13 +143,13 @@ export default function UsersPage() {
                 disabled={saving || !formData.email || !formData.fullName}
                 style={{ padding: "8px 20px", background: "var(--primary-color)", color: "#fff", border: "none", borderRadius: 4, fontWeight: 600, cursor: "pointer", fontSize: 13, fontFamily: "inherit", opacity: saving ? 0.6 : 1 }}
               >
-                {saving ? "Creating..." : "Create User"}
+                {saving ? t("saving") : t("confirm")}
               </button>
               <button
                 onClick={() => setShowForm(false)}
                 style={{ padding: "8px 20px", background: "#f1f5f9", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}
               >
-                Cancel
+                {t("cancel")}
               </button>
             </div>
           </div>
@@ -160,7 +159,7 @@ export default function UsersPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {["Name", "Email", "Role", "Status", "Created", "Actions"].map((h) => (
+                {[t("userName"), t("userEmail"), t("userRole"), t("userStatus"), t("userCreated"), t("thAction")].map((h) => (
                   <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 600, color: "#64748b", borderBottom: "1px solid #e2e8f0", background: "#fafafa" }}>
                     {h}
                   </th>
@@ -169,10 +168,10 @@ export default function UsersPage() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Loading...</td></tr>
+                <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>{t("loading")}</td></tr>
               )}
               {!loading && users.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>No users found.</td></tr>
+                <tr><td colSpan={6} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>{t("noUsersYet")}</td></tr>
               )}
               {users.map((user) => (
                 <tr key={user.id} style={{ borderBottom: "1px solid #f1f5f9", opacity: user.isActive ? 1 : 0.5 }}>
@@ -204,7 +203,6 @@ export default function UsersPage() {
                           color: ROLE_COLORS[user.role] || "#64748b",
                           cursor: "pointer",
                         }}
-                        title="Click to change role"
                       >
                         {ROLE_LABELS[user.role] || user.role}
                       </span>
@@ -212,7 +210,7 @@ export default function UsersPage() {
                   </td>
                   <td style={{ padding: "10px 16px" }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: user.isActive ? "#059669" : "#94a3b8" }}>
-                      {user.isActive ? "Active" : "Inactive"}
+                      {user.isActive ? t("active") : t("inactive")}
                     </span>
                   </td>
                   <td style={{ padding: "10px 16px", fontSize: 12, color: "#94a3b8" }}>
@@ -232,7 +230,7 @@ export default function UsersPage() {
                         color: user.isActive ? "#ef4444" : "#059669",
                       }}
                     >
-                      {user.isActive ? "Deactivate" : "Activate"}
+                      {user.isActive ? t("deactivate") : t("activate")}
                     </button>
                   </td>
                 </tr>

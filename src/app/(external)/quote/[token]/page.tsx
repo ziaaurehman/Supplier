@@ -52,12 +52,12 @@ interface UploadedFile {
   createdAt: string;
 }
 
-const DECLINE_REASONS = [
-  { value: "not_in_range", label: "Product not in our range" },
-  { value: "quantity_too_small", label: "Quantity too small" },
-  { value: "deadline_not_feasible", label: "Deadline not feasible" },
-  { value: "no_capacity", label: "No capacity" },
-  { value: "other", label: "Other" },
+const DECLINE_REASON_KEYS: { value: string; key: string }[] = [
+  { value: "not_in_range", key: "reasonNotInRange" },
+  { value: "quantity_too_small", key: "reasonQtyTooSmall" },
+  { value: "deadline_not_feasible", key: "reasonDeadlineNotFeasible" },
+  { value: "no_capacity", key: "reasonNoCapacity" },
+  { value: "other", key: "reasonOther" },
 ];
 
 export default function SupplierQuotePage({ params }: { params: Promise<{ token: string }> }) {
@@ -317,8 +317,8 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
     return (
       <div className={styles.container}>
         <div className={styles.card}>
-          <h2 className={styles.title}>Quote Submitted</h2>
-          <p className={styles.subtitle}>Thank you! Your quote has been received and is being reviewed.</p>
+          <h2 className={styles.title}>{t("quoteSubmitted")}</h2>
+          <p className={styles.subtitle}>{t("quoteSubmittedMsg")}</p>
         </div>
       </div>
     );
@@ -348,7 +348,7 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
           <div className={styles.pricingGrid}>
             {item.quantityTiers.map((qt) => (
               <div key={qt.id} className={styles.tierBox}>
-                <label>Unit Price ({qt.quantity} pcs)</label>
+                <label>{t("unitPriceLabel").replace("{qty}", String(qt.quantity))}</label>
                 <div className={styles.inputWrapper}>
                   <span className={styles.currency}>{currency === "EUR" ? "€" : "$"}</span>
                   <input
@@ -366,11 +366,11 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
       ))}
 
       <div className={styles.card}>
-        <h3 className={styles.sectionTitle}>Costs & Terms</h3>
+        <h3 className={styles.sectionTitle}>{t("costsAndTerms")}</h3>
 
         <div className={styles.additionalCosts}>
           <div className={styles.inputGroup}>
-            <label>Currency</label>
+            <label>{t("currency")}</label>
             <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={{ width: "100%", padding: "0.5rem" }}>
               <option value="EUR">EUR (€)</option>
               <option value="USD">USD ($)</option>
@@ -384,17 +384,17 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
             </div>
           </div>
           <div className={styles.inputGroup}>
-            <label>Decoration Cost</label>
+            <label>{t("decorationCosts")}</label>
             <div className={styles.inputWrapper}>
               <span className={styles.currency}>{currency === "EUR" ? "€" : "$"}</span>
               <input type="number" step="0.01" placeholder="0.00" value={decorationCost} onChange={(e) => setDecorationCost(e.target.value)} />
             </div>
           </div>
           <div className={styles.inputGroup}>
-            <label>Decoration Type</label>
+            <label>{t("decorationType")}</label>
             <select value={decorationCostType} onChange={(e) => setDecorationCostType(e.target.value)} style={{ width: "100%", padding: "0.5rem" }}>
-              <option value="per_unit">Per Unit</option>
-              <option value="flat_rate">Flat Rate</option>
+              <option value="per_unit">{t("perUnit")}</option>
+              <option value="flat_rate">{t("flatRate")}</option>
             </select>
           </div>
           <div className={styles.inputGroup}>
@@ -405,7 +405,7 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
             </div>
           </div>
           <div className={styles.inputGroup}>
-            <label>Sample Cost</label>
+            <label>{t("sampleCosts")}</label>
             <div className={styles.inputWrapper}>
               <span className={styles.currency}>{currency === "EUR" ? "€" : "$"}</span>
               <input type="number" step="0.01" placeholder="0.00" value={sampleCost} onChange={(e) => setSampleCost(e.target.value)} />
@@ -415,15 +415,15 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
       </div>
 
       <div className={styles.card}>
-        <h3 className={styles.sectionTitle}>Additional Information</h3>
+        <h3 className={styles.sectionTitle}>{t("additionalInfo")}</h3>
 
         <div className={styles.infoGrid}>
           <div className={styles.inputGroup}>
-            <label>{t("leadTime")} (working days)</label>
+            <label>{t("leadTime")} ({t("workingDays")})</label>
             <input type="number" placeholder="e.g. 14" value={leadTimeDays} onChange={(e) => setLeadTimeDays(e.target.value)} />
           </div>
           <div className={styles.inputGroup}>
-            <label>MOQ</label>
+            <label>{t("moq")}</label>
             <input type="number" placeholder="e.g. 100" value={minimumOrderQty} onChange={(e) => setMinimumOrderQty(e.target.value)} />
           </div>
           <div className={styles.inputGroup}>
@@ -433,18 +433,18 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
         </div>
 
         <div className={styles.inputGroupFull}>
-          <label>Comments / Alternative Proposals</label>
-          <textarea rows={3} placeholder="Any additional information..." value={comment} onChange={(e) => setComment(e.target.value)}></textarea>
+          <label>{t("commentsAlternatives")}</label>
+          <textarea rows={3} placeholder={t("commentsPlaceholder")} value={comment} onChange={(e) => setComment(e.target.value)}></textarea>
         </div>
       </div>
 
       {counterOffers.length > 0 && (
         <div className={styles.card}>
-          <h3 className={styles.sectionTitle}>Counter Offers from Buyer</h3>
+          <h3 className={styles.sectionTitle}>{t("counterOffersTitle")}</h3>
           {counterOffers.map((co) => (
             <div key={co.id} style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: 16, marginBottom: 12, background: "#fffbeb" }}>
               <div style={{ fontSize: 13, color: "#92400e", fontWeight: 600, marginBottom: 8 }}>
-                Received {new Date(co.createdAt).toLocaleDateString()}
+                {t("received")} {new Date(co.createdAt).toLocaleDateString()}
               </div>
               {co.message && <p style={{ fontSize: 14, marginBottom: 12, fontStyle: "italic" }}>{co.message}</p>}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13, marginBottom: 12 }}>
@@ -460,13 +460,13 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
                   onClick={() => handleCounterOfferRespond(co.id, "accept")}
                   style={{ padding: "6px 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: 600, fontSize: 13 }}
                 >
-                  Accept
+                  {t("accept")}
                 </button>
                 <button
                   onClick={() => handleCounterOfferRespond(co.id, "decline")}
                   style={{ padding: "6px 16px", background: "#ef4444", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: 600, fontSize: 13 }}
                 >
-                  Decline
+                  {t("decline")}
                 </button>
               </div>
             </div>
@@ -475,7 +475,7 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
       )}
 
       <div className={styles.card}>
-        <h3 className={styles.sectionTitle}>File Attachments</h3>
+        <h3 className={styles.sectionTitle}>{t("fileAttachments")}</h3>
         {files.length > 0 && (
           <div style={{ marginBottom: 16 }}>
             {files.map((f) => (
@@ -487,18 +487,18 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
           </div>
         )}
         <label style={{ display: "inline-block", padding: "8px 16px", background: "#f1f5f9", borderRadius: 4, cursor: uploading ? "wait" : "pointer", fontSize: 13, fontWeight: 600 }}>
-          {uploading ? "Uploading..." : "+ Upload File"}
+          {uploading ? t("uploading") : t("uploadFile")}
           <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" style={{ display: "none" }} onChange={handleFileUpload} disabled={uploading} />
         </label>
         <span style={{ fontSize: 12, color: "#94a3b8", marginLeft: 8 }}>Max 10MB (PDF, JPG, PNG, GIF, WEBP)</span>
       </div>
 
       <div className={styles.card}>
-        <h3 className={styles.sectionTitle}>Messages</h3>
+        <h3 className={styles.sectionTitle}>{t("messagesTitle")}</h3>
         <div style={{ maxHeight: 300, overflowY: "auto", marginBottom: 12, border: "1px solid #f1f5f9", borderRadius: 6, padding: chatMessages.length ? 12 : 0 }}>
           {chatMessages.length === 0 ? (
             <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
-              No messages yet. Send a question or note to the buyer.
+              {t("noMessagesSupplier")}
             </div>
           ) : (
             chatMessages.map((msg) => (
@@ -514,7 +514,7 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
                 }}
               >
                 <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>
-                  <strong>{msg.senderType === "supplier" ? "You" : msg.senderName || "Buyer"}</strong>
+                  <strong>{msg.senderType === "supplier" ? t("you") : msg.senderName || t("buyer")}</strong>
                   {" — "}
                   {new Date(msg.createdAt).toLocaleString()}
                 </div>
@@ -526,7 +526,7 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
         <div style={{ display: "flex", gap: 8 }}>
           <textarea
             rows={2}
-            placeholder="Type a message..."
+            placeholder={t("typeMessage")}
             value={msgText}
             onChange={(e) => setMsgText(e.target.value)}
             style={{ flex: 1, padding: "8px 12px", border: "1px solid var(--border-color)", borderRadius: 4, fontFamily: "inherit", fontSize: 14, resize: "vertical" }}
@@ -547,33 +547,33 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
               opacity: sendingMsg || !msgText.trim() ? 0.6 : 1,
             }}
           >
-            {sendingMsg ? "..." : "Send"}
+            {sendingMsg ? "..." : t("send")}
           </button>
         </div>
       </div>
 
       {showDeclineForm && (
         <div className={styles.card}>
-          <h3 className={styles.sectionTitle}>Decline Reason</h3>
+          <h3 className={styles.sectionTitle}>{t("declineReasonTitle")}</h3>
           <div className={styles.inputGroup} style={{ marginBottom: "1rem" }}>
             <select value={declineReason} onChange={(e) => setDeclineReason(e.target.value)} style={{ width: "100%", padding: "0.5rem" }}>
-              {DECLINE_REASONS.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
+              {DECLINE_REASON_KEYS.map((r) => (
+                <option key={r.value} value={r.value}>{t(r.key as Parameters<typeof t>[0])}</option>
               ))}
             </select>
           </div>
           <div className={styles.inputGroupFull}>
-            <textarea rows={2} placeholder="Additional details (optional)" value={declineText} onChange={(e) => setDeclineText(e.target.value)}></textarea>
+            <textarea rows={2} placeholder={t("declineReasonPlaceholder")} value={declineText} onChange={(e) => setDeclineText(e.target.value)}></textarea>
           </div>
           <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
             <button className={styles.btnDecline} onClick={handleDecline} disabled={submitting}>
-              {submitting ? "Declining..." : "Confirm Decline"}
+              {submitting ? t("declining") : t("confirmDecline")}
             </button>
             <button
               onClick={() => setShowDeclineForm(false)}
               style={{ padding: "0.75rem 1.5rem", background: "#f1f5f9", border: "none", borderRadius: "6px", cursor: "pointer" }}
             >
-              Cancel
+              {t("cancel")}
             </button>
           </div>
         </div>
@@ -586,7 +586,7 @@ export default function SupplierQuotePage({ params }: { params: Promise<{ token:
           </button>
         )}
         <button className={styles.btnSubmit} onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "Submitting..." : t("submitQuote")}
+          {submitting ? t("submitting") : t("submitQuote")}
         </button>
       </div>
     </div>

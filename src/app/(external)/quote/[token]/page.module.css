@@ -119,10 +119,12 @@
   left: 12px;
   color: #777777;
   font-weight: 600;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .inputWrapper input {
-  padding-left: 30px;
+  padding-left: 30px !important;
   width: 100%;
 }
 

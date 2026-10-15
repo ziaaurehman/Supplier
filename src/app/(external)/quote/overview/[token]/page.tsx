@@ -46,7 +46,7 @@ export default function SupplierEnquiriesOverview({ params }: { params: Promise<
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.title}>Loading...</h1>
+          <h1 className={styles.title}>{t("loading")}</h1>
         </div>
       </div>
     );
@@ -56,8 +56,8 @@ export default function SupplierEnquiriesOverview({ params }: { params: Promise<
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.title}>Invalid link</h1>
-          <p className={styles.subtitle}>This link is no longer valid.</p>
+          <h1 className={styles.title}>{t("invalidLink")}</h1>
+          <p className={styles.subtitle}>{t("invalidLinkMsg")}</p>
         </div>
       </div>
     );
@@ -73,7 +73,7 @@ export default function SupplierEnquiriesOverview({ params }: { params: Promise<
       <div className={styles.card}>
         <h3 className={styles.sectionTitle}>{t("actionRequired")}</h3>
         {data.pending.length === 0 ? (
-          <p style={{ color: "#94a3b8", padding: "1rem 0" }}>No pending enquiries at this time.</p>
+          <p style={{ color: "#94a3b8", padding: "1rem 0" }}>{t("noPendingEnquiries")}</p>
         ) : (
           <div className={styles.tableResponsive}>
             <table className={styles.table}>
@@ -89,7 +89,7 @@ export default function SupplierEnquiriesOverview({ params }: { params: Promise<
                 {data.pending.map((rfq) => (
                   <tr key={rfq.token}>
                     <td><strong>{rfq.projectTitle}</strong></td>
-                    <td>Ref: {rfq.projectNumber}</td>
+                    <td>{rfq.projectNumber}</td>
                     <td>
                       {rfq.quoteDeadline ? (
                         <span className={styles.deadlineUrgent}>
@@ -113,7 +113,7 @@ export default function SupplierEnquiriesOverview({ params }: { params: Promise<
       <div className={styles.card}>
         <h3 className={styles.sectionTitle}>{t("pastEnquiries")}</h3>
         {data.past.length === 0 ? (
-          <p style={{ color: "#94a3b8", padding: "1rem 0" }}>No past enquiries.</p>
+          <p style={{ color: "#94a3b8", padding: "1rem 0" }}>{t("noPastEnquiries")}</p>
         ) : (
           <div className={styles.tableResponsive}>
             <table className={styles.table}>
@@ -128,12 +128,12 @@ export default function SupplierEnquiriesOverview({ params }: { params: Promise<
                 {data.past.map((rfq) => (
                   <tr key={rfq.token}>
                     <td><strong>{rfq.projectTitle}</strong></td>
-                    <td>Ref: {rfq.projectNumber}</td>
+                    <td>{rfq.projectNumber}</td>
                     <td>
                       {rfq.status === "quoted" && rfq.isWinner && <span className={styles.statusWon}>{t("won")}</span>}
                       {rfq.status === "quoted" && !rfq.isWinner && <span className={styles.statusLost}>{t("closed")}</span>}
                       {rfq.status === "declined" && <span className={styles.statusLost}>{t("declined")}</span>}
-                      {rfq.status === "expired" && <span className={styles.statusLost}>Expired</span>}
+                      {rfq.status === "expired" && <span className={styles.statusLost}>{t("expired")}</span>}
                     </td>
                   </tr>
                 ))}

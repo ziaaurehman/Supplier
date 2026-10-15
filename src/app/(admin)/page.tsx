@@ -80,10 +80,10 @@ export default function Dashboard() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  <th style={{ textAlign: "left", padding: "10px 15px", borderBottom: "1px solid #e2e8f0", fontSize: "0.8rem", color: "#64748b" }}>Action</th>
-                  <th style={{ textAlign: "left", padding: "10px 15px", borderBottom: "1px solid #e2e8f0", fontSize: "0.8rem", color: "#64748b" }}>Type</th>
-                  <th style={{ textAlign: "left", padding: "10px 15px", borderBottom: "1px solid #e2e8f0", fontSize: "0.8rem", color: "#64748b" }}>User</th>
-                  <th style={{ textAlign: "left", padding: "10px 15px", borderBottom: "1px solid #e2e8f0", fontSize: "0.8rem", color: "#64748b" }}>Date</th>
+                  <th style={{ textAlign: "left", padding: "10px 15px", borderBottom: "1px solid #e2e8f0", fontSize: "0.8rem", color: "#64748b" }}>{t("thActionCol")}</th>
+                  <th style={{ textAlign: "left", padding: "10px 15px", borderBottom: "1px solid #e2e8f0", fontSize: "0.8rem", color: "#64748b" }}>{t("thTypeCol")}</th>
+                  <th style={{ textAlign: "left", padding: "10px 15px", borderBottom: "1px solid #e2e8f0", fontSize: "0.8rem", color: "#64748b" }}>{t("thUserCol")}</th>
+                  <th style={{ textAlign: "left", padding: "10px 15px", borderBottom: "1px solid #e2e8f0", fontSize: "0.8rem", color: "#64748b" }}>{t("thDateCol")}</th>
                 </tr>
               </thead>
               <tbody>

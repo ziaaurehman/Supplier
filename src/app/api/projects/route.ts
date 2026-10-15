@@ -79,8 +79,15 @@ export async function POST(request: NextRequest) {
     };
     const data = createProjectSchema.parse(mapped);
 
+    const year = new Date().getFullYear();
+    const count = await prisma.project.count({
+      where: { projectNumber: { startsWith: `PRJ-${year}-` } },
+    });
+    const projectNumber = `PRJ-${year}-${String(count + 1).padStart(4, "0")}`;
+
     const project = await prisma.project.create({
       data: {
+        projectNumber,
         title: data.title,
         customerName: data.customerName || "",
         quoteDeadline: data.quoteDeadline ? new Date(data.quoteDeadline) : new Date(Date.now() + 14 * 86400000),

@@ -2,9 +2,11 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "../../../../../context/LanguageContext";
 
 export default function SupplierSelectionRedirect() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   useEffect(() => {
     router.replace("/projects");
@@ -12,7 +14,7 @@ export default function SupplierSelectionRedirect() {
 
   return (
     <div style={{ padding: 40, textAlign: "center" }}>
-      Redirecting... Create a project first, then select suppliers.
+      {t("redirecting")} {t("createProjectFirst")}
     </div>
   );
 }

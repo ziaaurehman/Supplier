@@ -105,7 +105,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
     try {
       const res = await fetch(`/api/quotes/${quoteId}/winner`, { method: "POST" });
       if (res.ok) fetchData();
-      else alert("Failed to mark winner");
+      else alert(t("failedMarkWinner"));
     } finally {
       setMarkingWinner(null);
     }
@@ -150,7 +150,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
       });
 
       if (Object.keys(unitPrices).length === 0) {
-        alert("Enter at least one counter-offer price");
+        alert(t("enterCounterPrice"));
         return;
       }
 
@@ -174,7 +174,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
         setCoMessage("");
         fetchData();
       } else {
-        alert("Failed to send counter offer");
+        alert(t("failedCounterOffer"));
       }
     } finally {
       setSubmittingCo(false);
@@ -240,7 +240,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
           setEditingCell(cellKey);
           setEditValue(String(value ?? 0));
         }}
-        title="Click to edit"
+        title={t("clickToEdit")}
       >
         {value != null ? `${currency} ${value.toFixed(2)}` : "—"}
       </span>
@@ -250,8 +250,8 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
   if (loading || !data) {
     return (
       <div>
-        <Topbar title="Loading..." subtitle="" backUrl={`/projects/${id}`} />
-        <div style={{ padding: 40, textAlign: "center" }}>Loading comparison...</div>
+        <Topbar title={t("loading")} subtitle="" backUrl={`/projects/${id}`} />
+        <div style={{ padding: 40, textAlign: "center" }}>{t("loadingComparison")}</div>
       </div>
     );
   }
@@ -260,27 +260,27 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
     <div>
       <Topbar
         title={t("comparisonTitle")}
-        subtitle={`Project ${data.project.projectNumber} • ${data.project.title}`}
+        subtitle={`${data.project.projectNumber} • ${data.project.title}`}
         backUrl={`/projects/${id}`}
       >
         <button className={styles.btnSecondary} onClick={() => handleExport(true)}>
-          Export Winner
+          {t("exportWinner")}
         </button>
         <button className={styles.btnSecondary} onClick={() => handleExport()}>
-          {t("exportExcel")}
+          {t("exportCsvQuotes")}
         </button>
       </Topbar>
 
       <div className={styles.content}>
         <div className={styles.sortBar}>
-          <span className={styles.sortLabel}>Sort by:</span>
+          <span className={styles.sortLabel}>{t("sortBy")}:</span>
           {(
             [
-              ["none", "Default"],
-              ["total_asc", "Lowest Total Cost"],
-              ["lead_time", "Fastest Delivery"],
-              ["supplier", "Supplier Name"],
-              ["status", "Quote Status"],
+              ["none", t("sortDefault")],
+              ["total_asc", t("sortTotalCost")],
+              ["lead_time", t("sortLeadTime")],
+              ["supplier", t("sortSupplier")],
+              ["status", t("sortQuoteStatus")],
             ] as [SortMode, string][]
           ).map(([mode, label]) => (
             <button
@@ -305,7 +305,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                 <table className={styles.compareTable}>
                   <thead>
                     <tr>
-                      <th className={styles.rowLabel}>Criteria</th>
+                      <th className={styles.rowLabel}>{t("criteria")}</th>
                       {allSuppliers.map((s) => (
                         <th key={s.supplierId} className={styles.supplierCol}>
                           <div className={styles.supplierName}>
@@ -315,7 +315,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                             )}
                           </div>
                           {s.rfqStatus === "quoted" && (
-                            <div className={styles.supplierStatus}>Quoted</div>
+                            <div className={styles.supplierStatus}>{t("quoted")}</div>
                           )}
                           {s.rfqStatus === "declined" && (
                             <div className={styles.supplierDeclined}>
@@ -324,7 +324,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                             </div>
                           )}
                           {["sent", "opened"].includes(s.rfqStatus) && (
-                            <div className={styles.supplierStatus}>Pending</div>
+                            <div className={styles.supplierStatus}>{t("pending")}</div>
                           )}
                         </th>
                       ))}
@@ -344,10 +344,10 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                       return (
                         <React.Fragment key={qty}>
                           <tr className={styles.sectionRow}>
-                            <td colSpan={allSuppliers.length + 1}>Quantity: {qty} units</td>
+                            <td colSpan={allSuppliers.length + 1}>{t("quantity")}: {qty} {t("units")}</td>
                           </tr>
                           <tr>
-                            <td className={styles.rowLabel}>Unit Price (Net)</td>
+                            <td className={styles.rowLabel}>{t("unitPriceNet")}</td>
                             {allSuppliers.map((s) => {
                               const tier = s.totals?.find((tt) => tt.quantity === qty);
                               const priceTier = s.quote?.priceTiers?.find(
@@ -384,7 +384,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                             ))}
                           </tr>
                           <tr>
-                            <td className={styles.rowLabel}>Decoration</td>
+                            <td className={styles.rowLabel}>{t("decoration")}</td>
                             {allSuppliers.map((s) => (
                               <td key={s.supplierId}>
                                 {s.quote
@@ -417,7 +417,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                             (s) => s.quote && s.quote.sampleCost > 0
                           ) && (
                             <tr>
-                              <td className={styles.rowLabel}>Sample Cost</td>
+                              <td className={styles.rowLabel}>{t("sampleCost")}</td>
                               {allSuppliers.map((s) => (
                                 <td key={s.supplierId}>
                                   {s.quote
@@ -434,7 +434,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                           )}
                           <tr className={styles.totalRow}>
                             <td className={styles.rowLabel}>
-                              {t("totalCost")} ({qty} units)
+                              {t("totalCost")} ({qty} {t("units")})
                             </td>
                             {allSuppliers.map((s) => {
                               const tier = s.totals?.find((tt) => tt.quantity === qty);
@@ -451,7 +451,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                     <>
                                       {s.quote?.currency} {tier.total.toFixed(2)}{" "}
                                       <span className={styles.unitCalc}>
-                                        ({s.quote?.currency} {tier.unitTotal?.toFixed(2)}/ea)
+                                        ({s.quote?.currency} {tier.unitTotal?.toFixed(2)}/{t("eachUnit")})
                                       </span>
                                     </>
                                   ) : (
@@ -466,20 +466,20 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                     })}
 
                     <tr className={styles.sectionRow}>
-                      <td colSpan={allSuppliers.length + 1}>Terms & Information</td>
+                      <td colSpan={allSuppliers.length + 1}>{t("termsInfo")}</td>
                     </tr>
                     <tr>
                       <td className={styles.rowLabel}>{t("leadTime")}</td>
                       {allSuppliers.map((s) => (
                         <td key={s.supplierId}>
                           {s.quote?.leadTimeDays
-                            ? `${s.quote.leadTimeDays} working days`
+                            ? `${s.quote.leadTimeDays} ${t("workingDays")}`
                             : "—"}
                         </td>
                       ))}
                     </tr>
                     <tr>
-                      <td className={styles.rowLabel}>MOQ</td>
+                      <td className={styles.rowLabel}>{t("moq")}</td>
                       {allSuppliers.map((s) => (
                         <td key={s.supplierId}>{s.quote?.minimumOrderQty || "—"}</td>
                       ))}
@@ -496,7 +496,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                     </tr>
                     {allSuppliers.some((s) => s.quote?.comment) && (
                       <tr>
-                        <td className={styles.rowLabel}>Comments</td>
+                        <td className={styles.rowLabel}>{t("comments")}</td>
                         {allSuppliers.map((s) => (
                           <td key={s.supplierId} style={{ fontSize: 13, color: "#64748b" }}>
                             {s.quote?.comment || "—"}
@@ -505,16 +505,15 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                       </tr>
                     )}
 
-                    {/* Counter Offer History */}
                     {allSuppliers.some(
                       (s) => s.quote?.counterOffers && s.quote.counterOffers.length > 0
                     ) && (
                       <>
                         <tr className={styles.sectionRow}>
-                          <td colSpan={allSuppliers.length + 1}>Negotiation History</td>
+                          <td colSpan={allSuppliers.length + 1}>{t("negotiationHistory")}</td>
                         </tr>
                         <tr>
-                          <td className={styles.rowLabel}>Counter Offers</td>
+                          <td className={styles.rowLabel}>{t("counterOffers")}</td>
                           {allSuppliers.map((s) => {
                             const cos = s.quote?.counterOffers || [];
                             if (cos.length === 0) return <td key={s.supplierId}>—</td>;
@@ -531,8 +530,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                     )
                                   }
                                 >
-                                  {cos.length} offer{cos.length !== 1 ? "s" : ""} (
-                                  {cos.filter((c) => c.status === "pending").length} pending)
+                                  {cos.length} ({cos.filter((c) => c.status === "pending").length} {t("pending").toLowerCase()})
                                 </button>
                                 {showNegotiationHistory === s.quote!.id && (
                                   <div className={styles.negotiationHistory}>
@@ -540,7 +538,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                       <div key={co.id} className={styles.coItem}>
                                         <div className={styles.coHeader}>
                                           <span className={styles.coFrom}>
-                                            {co.offeredByInternal ? "You" : s.supplierName}
+                                            {co.offeredByInternal ? t("you") : s.supplierName}
                                           </span>
                                           <span
                                             className={`${styles.coStatus} ${styles[`co_${co.status}`]}`}
@@ -590,7 +588,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                     markingWinner === s.quote.id || s.quote.isWinner
                                   }
                                 >
-                                  {s.quote.isWinner ? "Winner" : t("markWinner")}
+                                  {s.quote.isWinner ? t("winner") : t("markWinner")}
                                 </button>
                                 {!s.quote.isWinner && (
                                   <button
@@ -605,7 +603,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                       setCoMessage("");
                                     }}
                                   >
-                                    Counter Offer
+                                    {t("counterOffer")}
                                   </button>
                                 )}
                               </>
@@ -615,7 +613,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                           {counterOfferQuoteId === s.quote?.id && (
                             <div className={styles.counterOfferForm}>
                               <h4 style={{ margin: "0 0 8px", fontSize: 13 }}>
-                                Counter Offer to {s.supplierName}
+                                {t("counterOfferTo")} {s.supplierName}
                               </h4>
                               {compItem.tiers.map((qty) => {
                                 const priceTier = s.quote?.priceTiers?.find(
@@ -624,7 +622,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                 if (!priceTier) return null;
                                 return (
                                   <div key={qty} className={styles.coInputRow}>
-                                    <label>{qty} pcs</label>
+                                    <label>{qty} {t("pcs")}</label>
                                     <input
                                       type="number"
                                       step="0.01"
@@ -641,7 +639,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                 );
                               })}
                               <div className={styles.coInputRow}>
-                                <label>Setup</label>
+                                <label>{t("setup")}</label>
                                 <input
                                   type="number"
                                   step="0.01"
@@ -658,7 +656,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                               <textarea
                                 className={styles.coTextarea}
                                 rows={2}
-                                placeholder="Message to supplier..."
+                                placeholder={t("messageToSupplier")}
                                 value={coMessage}
                                 onChange={(e) => setCoMessage(e.target.value)}
                               />
@@ -674,14 +672,14 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                   }
                                   disabled={submittingCo}
                                 >
-                                  {submittingCo ? "Sending..." : "Send"}
+                                  {submittingCo ? t("sending") : t("send")}
                                 </button>
                                 <button
                                   className={styles.btnSecondary}
                                   style={{ padding: "8px 12px", fontSize: 13 }}
                                   onClick={() => setCounterOfferQuoteId(null)}
                                 >
-                                  Cancel
+                                  {t("cancel")}
                                 </button>
                               </div>
                             </div>
@@ -698,7 +696,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
 
         {data.comparison.length === 0 && (
           <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>
-            No quotes received yet. Waiting for suppliers to respond.
+            {t("noQuotesWaiting")}
           </div>
         )}
       </div>
