@@ -38,7 +38,7 @@ export async function GET() {
         entityType: a.entityType,
         entityId: a.entityId,
         details: a.details,
-        userName: a.user?.fullName || a.user?.email || "System",
+        userName: a.user?.fullName || a.user?.email || "",
         createdAt: a.createdAt,
       })),
     });

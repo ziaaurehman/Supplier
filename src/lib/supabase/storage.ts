@@ -7,7 +7,17 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 const BUCKET = "attachments";
 
-export async function ensureBucket() {
+let bucketReady: Promise<void> | null = null;
+
+function ensureBucketOnce() {
+  bucketReady ??= ensureBucket().catch((e) => {
+    bucketReady = null;
+    throw e;
+  });
+  return bucketReady;
+}
+
+async function ensureBucket() {
   const { data } = await supabaseAdmin.storage.getBucket(BUCKET);
   if (!data) {
     await supabaseAdmin.storage.createBucket(BUCKET, {
@@ -29,7 +39,7 @@ export async function uploadFile(
   file: Buffer,
   contentType: string
 ): Promise<{ url: string } | { error: string }> {
-  await ensureBucket();
+  await ensureBucketOnce();
 
   const { error } = await supabaseAdmin.storage
     .from(BUCKET)
@@ -47,13 +57,15 @@ export async function uploadFile(
   return { url: signedData.signedUrl };
 }
 
-export async function getSignedUrl(path: string): Promise<string | null> {
-  const { data, error } = await supabaseAdmin.storage
-    .from(BUCKET)
-    .createSignedUrl(path, 3600);
+export async function getSignedUrls(paths: string[]): Promise<Map<string, string | null>> {
+  const urls = new Map<string, string | null>();
+  if (paths.length === 0) return urls;
 
-  if (error || !data) return null;
-  return data.signedUrl;
+  const { data } = await supabaseAdmin.storage.from(BUCKET).createSignedUrls(paths, 3600);
+  for (const entry of data || []) {
+    if (entry.path) urls.set(entry.path, entry.error ? null : entry.signedUrl);
+  }
+  return urls;
 }
 
 export async function deleteFile(path: string): Promise<boolean> {

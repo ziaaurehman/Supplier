@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { isPastDateForServer } from "@/lib/dates";
 
 export async function GET(
   _request: NextRequest,
@@ -24,6 +25,7 @@ export async function GET(
           include: {
             supplier: { include: { contacts: true } },
             quotes: { include: { priceTiers: true } },
+            _count: { select: { messages: { where: { senderType: "supplier", readAt: null } } } },
           },
         },
         creator: { select: { fullName: true, email: true } },
@@ -44,7 +46,7 @@ export async function GET(
         status: project.status,
         internalDescription: project.internalDescription,
         items: project.items,
-        rfqs: project.rfqs,
+        rfqs: project.rfqs.map(({ _count, ...rfq }) => ({ ...rfq, unreadCount: _count.messages })),
         creator: project.creator,
         attachments: project.attachments,
       },
@@ -63,6 +65,33 @@ export async function PATCH(
     await requireUser(["ADMIN", "INTERNAL_SALES"]);
     const { id } = await params;
     const body = await request.json();
+
+    const existing = await prisma.project.findUnique({
+      where: { id },
+      select: { quoteDeadline: true, requestedDeliveryDate: true },
+    });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const toYmd = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
+    const newDeadline: string | null = body.quoteDeadline || null;
+    const newDelivery: string | null = body.deliveryDate || body.requestedDeliveryDate || null;
+    const deadlineChanged = !!newDeadline && newDeadline !== toYmd(existing.quoteDeadline);
+    const deliveryChanged = !!newDelivery && newDelivery !== toYmd(existing.requestedDeliveryDate);
+
+    if (deadlineChanged && isPastDateForServer(newDeadline)) {
+      return NextResponse.json({ error: "Quote deadline cannot be in the past" }, { status: 400 });
+    }
+    if (deliveryChanged && isPastDateForServer(newDelivery)) {
+      return NextResponse.json({ error: "Delivery date cannot be in the past" }, { status: 400 });
+    }
+    const effectiveDeadline = newDeadline ?? toYmd(existing.quoteDeadline);
+    const effectiveDelivery = newDelivery ?? toYmd(existing.requestedDeliveryDate);
+    if (
+      (deadlineChanged || deliveryChanged) &&
+      effectiveDeadline && effectiveDelivery && effectiveDelivery < effectiveDeadline
+    ) {
+      return NextResponse.json({ error: "Delivery date cannot be before the quote deadline" }, { status: 400 });
+    }
 
     const updateData: Record<string, unknown> = {};
     if (body.title) updateData.title = body.title;

@@ -2,6 +2,12 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  // API routes authenticate themselves; supplier and auth-flow pages are public.
+  if (path.startsWith("/api/") || path.startsWith("/quote/") || path.startsWith("/auth/")) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -25,17 +31,10 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub;
 
-  const isAuthPage = request.nextUrl.pathname === "/login";
-  const isSupplierPage = request.nextUrl.pathname.startsWith("/quote/");
-  const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
-
-  if (isSupplierPage || isApiRoute) {
-    return supabaseResponse;
-  }
+  const isAuthPage = path === "/login";
 
   if (!user && !isAuthPage) {
     const url = request.nextUrl.clone();

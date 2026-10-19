@@ -4,8 +4,17 @@ import Topbar from "../../../../components/Topbar";
 import styles from "./page.module.css";
 import Link from "next/link";
 import { useLanguage } from "../../../../context/LanguageContext";
+import ItemAttachments from "../../../../components/ItemAttachments";
+import { useTodayLocal } from "@/hooks/useTodayLocal";
+import { isPastLocalDate } from "@/lib/dates";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+
+interface PendingFile {
+  id: string;
+  file: File;
+  previewUrl: string;
+}
 
 interface Item {
   key: number;
@@ -13,7 +22,17 @@ interface Item {
   description: string;
   decorationMethod: string;
   tiers: string[];
+  files: PendingFile[];
 }
+
+const newItem = (): Item => ({
+  key: Date.now() + Math.random(),
+  name: "",
+  description: "",
+  decorationMethod: "Laser Engraving",
+  tiers: ["", "", ""],
+  files: [],
+});
 
 export default function CreateProjectPage() {
   const { t } = useLanguage();
@@ -24,17 +43,57 @@ export default function CreateProjectPage() {
   const [customerRef, setCustomerRef] = useState("");
   const [quoteDeadline, setQuoteDeadline] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
+  const today = useTodayLocal();
   const [internalDesc, setInternalDesc] = useState("");
-  const [items, setItems] = useState<Item[]>([
-    { key: 1, name: "", description: "", decorationMethod: "Laser Engraving", tiers: ["", "", ""] },
-  ]);
+  const [items, setItems] = useState<Item[]>(() => [newItem()]);
 
   const handleAddItem = () => {
-    setItems([...items, { key: Date.now(), name: "", description: "", decorationMethod: "Laser Engraving", tiers: ["", "", ""] }]);
+    setItems([...items, newItem()]);
   };
 
   const handleRemoveItem = (idx: number) => {
+    items[idx].files.forEach((f) => URL.revokeObjectURL(f.previewUrl));
     setItems(items.filter((_, i) => i !== idx));
+  };
+
+  const addItemFiles = (idx: number, picked: File[]) => {
+    const pending = picked.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setItems((prev) => prev.map((item, i) => (i === idx ? { ...item, files: [...item.files, ...pending] } : item)));
+  };
+
+  const removeItemFile = (idx: number, fileId: string) => {
+    setItems((prev) => prev.map((item, i) => {
+      if (i !== idx) return item;
+      const target = item.files.find((f) => f.id === fileId);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return { ...item, files: item.files.filter((f) => f.id !== fileId) };
+    }));
+  };
+
+  const uploadItemFiles = async (
+    projectId: string,
+    createdItems: { id: string; sortOrder: number }[],
+    submitted: Item[]
+  ): Promise<boolean> => {
+    const uploads = submitted.flatMap((item, idx) => {
+      const created = createdItems.find((c) => c.sortOrder === idx);
+      if (!created) return [];
+      return item.files.map(async (f) => {
+        const formData = new FormData();
+        formData.append("file", f.file);
+        formData.append("projectId", projectId);
+        formData.append("projectItemId", created.id);
+        formData.append("visibleToSupplier", "true");
+        const res = await fetch("/api/attachments", { method: "POST", body: formData });
+        return res.ok;
+      });
+    });
+    const results = await Promise.all(uploads);
+    return results.every(Boolean);
   };
 
   const updateItem = (idx: number, field: string, value: string) => {
@@ -50,20 +109,30 @@ export default function CreateProjectPage() {
     }));
   };
 
-  const handleSaveDraft = async () => {
-    await saveProject(false);
+  const handleCancel = () => {
+    const hasInput =
+      [title, customerRef, quoteDeadline, deliveryDate, internalDesc].some((v) => v.trim()) ||
+      items.some((i) => i.name.trim() || i.description.trim() || i.tiers.some(Boolean) || i.files.length > 0);
+    if (hasInput && !confirm(t("discardProjectConfirm"))) return;
+    items.forEach((i) => i.files.forEach((f) => URL.revokeObjectURL(f.previewUrl)));
+    router.push("/projects");
   };
 
   const handleSaveAndProceed = async () => {
-    const projectId = await saveProject(true);
+    const projectId = await saveProject();
     if (projectId) {
       router.push(`/projects/${projectId}/suppliers`);
     }
   };
 
-  const saveProject = async (proceed: boolean): Promise<string | null> => {
+  const saveProject = async (): Promise<string | null> => {
     if (!title.trim()) { alert(t("titleRequired")); return null; }
+    if (isPastLocalDate(quoteDeadline)) { alert(t("deadlineInPast")); return null; }
+    if (isPastLocalDate(deliveryDate)) { alert(t("deliveryInPast")); return null; }
+    if (quoteDeadline && deliveryDate && deliveryDate < quoteDeadline) { alert(t("deliveryBeforeDeadline")); return null; }
     if (!items.some((i) => i.name.trim())) { alert(t("itemRequired")); return null; }
+
+    const submitted = items.filter((i) => i.name.trim());
 
     setSaving(true);
     try {
@@ -76,8 +145,7 @@ export default function CreateProjectPage() {
           quoteDeadline: quoteDeadline || null,
           deliveryDate: deliveryDate || null,
           internalDescription: internalDesc.trim() || null,
-          items: items
-            .filter((i) => i.name.trim())
+          items: submitted
             .map((i, idx) => ({
               name: i.name.trim(),
               description: i.description.trim() || null,
@@ -92,8 +160,12 @@ export default function CreateProjectPage() {
 
       if (res.ok) {
         const data = await res.json();
-        if (!proceed) router.push("/projects");
-        return data.project?.id || null;
+        const projectId: string | null = data.project?.id || null;
+        if (projectId && submitted.some((i) => i.files.length > 0)) {
+          const allUploaded = await uploadItemFiles(projectId, data.project.items || [], submitted);
+          if (!allUploaded) alert(t("someUploadsFailed"));
+        }
+        return projectId;
       } else {
         const data = await res.json();
         alert(data.error || t("failedCreate"));
@@ -107,7 +179,7 @@ export default function CreateProjectPage() {
   return (
     <div>
       <Topbar title={t("createProjectTitle")} subtitle={t("createProjectSubtitle")} backUrl="/projects">
-        <button className={styles.btnSecondary} onClick={handleSaveDraft} disabled={saving}>
+        <button className={styles.btnSecondary} onClick={handleCancel} disabled={saving}>
           {t("cancel")}
         </button>
         <button className={styles.btnPrimary} onClick={handleSaveAndProceed} disabled={saving}>
@@ -129,11 +201,11 @@ export default function CreateProjectPage() {
             </div>
             <div className={styles.inputGroup}>
               <label>{t("thDeadline")}</label>
-              <input type="date" value={quoteDeadline} onChange={(e) => setQuoteDeadline(e.target.value)} />
+              <input type="date" min={today || undefined} value={quoteDeadline} onChange={(e) => setQuoteDeadline(e.target.value)} />
             </div>
             <div className={styles.inputGroup}>
               <label>{t("deliveryDate")}</label>
-              <input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+              <input type="date" min={(quoteDeadline > today ? quoteDeadline : today) || undefined} value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
             </div>
           </div>
 
@@ -201,6 +273,13 @@ export default function CreateProjectPage() {
                   ))}
                 </div>
               </div>
+
+              <ItemAttachments
+                files={item.files.map((f) => ({ id: f.id, fileName: f.file.name, mimeType: f.file.type, url: f.previewUrl }))}
+                onAdd={(picked) => addItemFiles(index, picked)}
+                onRemove={(fileId) => removeItemFile(index, fileId)}
+                busy={saving}
+              />
             </div>
           ))}
         </div>

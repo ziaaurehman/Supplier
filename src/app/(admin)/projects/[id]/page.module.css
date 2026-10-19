@@ -38,7 +38,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  gap: 16px;
+  padding: 14px 0;
   border-bottom: 1px solid #F0F2F5;
 }
 
@@ -49,22 +50,73 @@
 .supplierInfo {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .supplierInfo strong {
   font-size: 14px;
   color: var(--text-dark);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .supplierInfo span {
   font-size: 12px;
-  color: #777777;
-  margin-top: 4px;
+  color: #94a3b8;
+  margin-top: 3px;
+  white-space: nowrap;
+  cursor: default;
 }
 
-.statusQuoted { color: #10B981; font-weight: 600; font-size: 13px; }
-.statusDeclined { color: #EF4444; font-weight: 600; font-size: 13px; }
-.statusPending { color: #F59E0B; font-weight: 600; font-size: 13px; }
+.supplierActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.statusSent { background: #eff6ff; color: #2563eb; }
+.statusOpened { background: #fffbeb; color: #b45309; }
+.statusQuoted { background: #ecfdf5; color: #047857; }
+.statusDeclined { background: #fef2f2; color: #dc2626; }
+.statusNeutral { background: #f1f5f9; color: #64748b; }
+
+.copyLinkBtn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.copyLinkBtn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.copyLinkBtnDone,
+.copyLinkBtnDone:hover {
+  color: #059669;
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
 
 .card p {
   font-size: 14px;
@@ -224,4 +276,147 @@
   .grid {
     grid-template-columns: 1fr;
   }
+}
+
+.unreadBadge {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: none;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.newPill {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.replyHint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Attachments */
+.fileGroupTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 4px 0 8px;
+}
+
+.fileGroupTitle ~ .fileGroupTitle {
+  margin-top: 20px;
+}
+
+.fileEmpty {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.fileGroup {
+  margin-bottom: 10px;
+}
+
+.fileGroupSupplier {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 8px 0 2px;
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+}
+
+.fileName {
+  flex: 1;
+  min-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileMeta {
+  color: #94a3b8;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.fileLink {
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.shareBadgeShared,
+.shareBadgeInternal {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.shareBadgeShared { background: #eff6ff; color: #2563eb; }
+.shareBadgeInternal { background: #f1f5f9; color: #64748b; }
+
+.shareToggle {
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: #fff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.uploadRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.uploadBtn {
+  display: inline-block;
+  padding: 8px 16px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.shareCheckbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.fileHint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #94a3b8;
 }

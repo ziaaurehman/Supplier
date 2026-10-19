@@ -4,28 +4,29 @@ import type { UserRole } from "@prisma/client";
 
 export async function getCurrentUser() {
   const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser) return null;
+  // getClaims verifies the JWT locally against the cached JWKS (ES256), avoiding an Auth server round trip per request.
+  const { data, error } = await supabase.auth.getClaims();
+  const authId = data?.claims?.sub;
+  if (error || !authId) return null;
+  const email = typeof data.claims.email === "string" ? data.claims.email : null;
 
   let dbUser = await prisma.user.findUnique({
-    where: { authId: authUser.id },
+    where: { authId },
   });
 
-  if (!dbUser) {
+  if (!dbUser && email) {
     dbUser = await prisma.user.findUnique({
-      where: { email: authUser.email! },
+      where: { email },
     });
     if (dbUser && !dbUser.authId) {
       dbUser = await prisma.user.update({
         where: { id: dbUser.id },
-        data: { authId: authUser.id },
+        data: { authId },
       });
     }
   }
 
+  if (!dbUser?.isActive) return null;
   return dbUser;
 }
 

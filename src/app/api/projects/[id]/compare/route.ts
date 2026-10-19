@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import { getSignedUrls } from "@/lib/supabase/storage";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireUser();
+    const user = await requireUser();
     const { id: projectId } = await params;
 
     const project = await prisma.project.findUnique({
-      where: { id: projectId },
+      where: { id: projectId, ...(user.role === "FIELD_SALES" && { createdBy: user.id }) },
       include: {
         items: {
           include: {
@@ -22,6 +23,11 @@ export async function GET(
         rfqs: {
           include: {
             supplier: { select: { id: true, name: true } },
+            attachments: {
+              where: { uploadedBySupplier: true },
+              orderBy: { createdAt: "asc" },
+              select: { id: true, fileName: true, mimeType: true, fileUrl: true, createdAt: true },
+            },
             quotes: {
               include: {
                 priceTiers: true,
@@ -123,7 +129,17 @@ export async function GET(
       };
     });
 
+    const docUrls = await getSignedUrls(project.rfqs.flatMap((r) => r.attachments.map((a) => a.fileUrl)));
+    const supplierDocuments = project.rfqs
+      .filter((r) => r.attachments.length > 0)
+      .map((r) => ({
+        supplierId: r.supplier.id,
+        supplierName: r.supplier.name,
+        files: r.attachments.map(({ fileUrl, ...a }) => ({ ...a, signedUrl: docUrls.get(fileUrl) ?? null })),
+      }));
+
     return NextResponse.json({
+      supplierDocuments,
       project: {
         id: project.id,
         projectNumber: project.projectNumber,

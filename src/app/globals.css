@@ -24,3 +24,37 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* Zero-specificity click feedback; any component-level style still wins. */
+:where(button, [role="button"]) {
+  transition: transform 0.08s ease, filter 0.12s ease, background-color 0.12s ease, opacity 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button:not(:disabled), [role="button"]) {
+  cursor: pointer;
+}
+
+:where(button:not(:disabled):hover) {
+  filter: brightness(0.96);
+}
+
+:where(button:not(:disabled):active) {
+  transform: scale(0.97);
+  filter: brightness(0.9);
+}
+
+:where(button:disabled) {
+  cursor: not-allowed;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(button:not(:disabled):active) {
+    transform: none;
+  }
+}

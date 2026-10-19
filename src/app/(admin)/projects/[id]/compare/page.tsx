@@ -5,6 +5,14 @@ import Topbar from "../../../../../components/Topbar";
 import styles from "./page.module.css";
 import { useLanguage } from "../../../../../context/LanguageContext";
 
+const CO_STATUS_KEYS: Record<string, string> = {
+  pending: "coStatusPending",
+  accepted: "coStatusAccepted",
+  declined: "coStatusDeclined",
+  countered: "coStatusCountered",
+  superseded: "coStatusSuperseded",
+};
+
 interface CounterOfferData {
   id: string;
   offeredByInternal: boolean;
@@ -63,7 +71,14 @@ interface CompareItem {
   supplierQuotes: SupplierQuote[];
 }
 
+interface SupplierDocumentGroup {
+  supplierId: string;
+  supplierName: string;
+  files: { id: string; fileName: string; mimeType: string | null; signedUrl: string | null; createdAt: string }[];
+}
+
 interface CompareResponse {
+  supplierDocuments?: SupplierDocumentGroup[];
   project: {
     id: string;
     projectNumber: string;
@@ -534,7 +549,7 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                 </button>
                                 {showNegotiationHistory === s.quote!.id && (
                                   <div className={styles.negotiationHistory}>
-                                    {cos.map((co, idx) => (
+                                    {cos.map((co) => (
                                       <div key={co.id} className={styles.coItem}>
                                         <div className={styles.coHeader}>
                                           <span className={styles.coFrom}>
@@ -542,16 +557,21 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
                                           </span>
                                           <span
                                             className={`${styles.coStatus} ${styles[`co_${co.status}`]}`}
+                                            title={co.status === "superseded" ? t("coSupersededHint") : undefined}
                                           >
-                                            {co.status}
+                                            {CO_STATUS_KEYS[co.status] ? t(CO_STATUS_KEYS[co.status] as Parameters<typeof t>[0]) : co.status}
                                           </span>
                                         </div>
                                         <div className={styles.coDetails}>
-                                          {Object.entries(co.unitPrices).map(([, price]) => (
-                                            <span key={`${co.id}-${idx}`}>
-                                              {s.quote?.currency} {Number(price).toFixed(2)}
-                                            </span>
-                                          ))}
+                                          {Object.entries(co.unitPrices).map(([tierId, price]) => {
+                                            const qty = s.quote?.priceTiers?.find((pt) => pt.id === tierId)?.quantity;
+                                            return (
+                                              <span key={`${co.id}-${tierId}`} className={styles.coPrice}>
+                                                {qty ? `${qty.toLocaleString()} × ` : ""}
+                                                {s.quote?.currency} {Number(price).toFixed(2)}
+                                              </span>
+                                            );
+                                          })}
                                         </div>
                                         {co.message && (
                                           <p className={styles.coMsg}>{co.message}</p>
@@ -693,6 +713,31 @@ export default function QuoteComparisonPage({ params }: { params: Promise<{ id: 
             </div>
           );
         })}
+
+        {(data.supplierDocuments?.length ?? 0) > 0 && (
+          <div className={styles.docsCard}>
+            <h3 className={styles.docsTitle}>{t("supplierDocuments")}</h3>
+            <div className={styles.docsGrid}>
+              {data.supplierDocuments!.map((group) => (
+                <div key={group.supplierId} className={styles.docsColumn}>
+                  <div className={styles.docsSupplier}>{group.supplierName}</div>
+                  <ul className={styles.docsList}>
+                    {group.files.map((f) => (
+                      <li key={f.id}>
+                        {f.signedUrl ? (
+                          <a href={f.signedUrl} target="_blank" rel="noopener noreferrer" title={f.fileName}>{f.fileName}</a>
+                        ) : (
+                          <span>{f.fileName}</span>
+                        )}
+                        <span className={styles.docsDate}>{new Date(f.createdAt).toLocaleDateString()}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {data.comparison.length === 0 && (
           <div style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>

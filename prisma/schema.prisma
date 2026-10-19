@@ -59,6 +59,7 @@ enum CounterOfferStatus {
   accepted
   declined
   countered
+  superseded
 
   @@map("counter_offer_status")
 }
@@ -200,6 +201,8 @@ model Rfq {
   respondedAt      DateTime?     @map("responded_at") @db.Timestamptz
   reminderCount    Int           @default(0) @map("reminder_count")
   lastReminderAt   DateTime?     @map("last_reminder_at") @db.Timestamptz
+  supplierNotifiedAt DateTime?   @map("supplier_notified_at") @db.Timestamptz
+  staffNotifiedAt  DateTime?     @map("staff_notified_at") @db.Timestamptz
   declineReason    DeclineReason? @map("decline_reason")
   declineReasonText String?      @map("decline_reason_text")
   createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
@@ -239,7 +242,7 @@ model Quote {
   updatedAt          DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   rfq           Rfq              @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  projectItem   ProjectItem      @relation(fields: [projectItemId], references: [id])
+  projectItem   ProjectItem      @relation(fields: [projectItemId], references: [id], onDelete: Cascade)
   priceTiers    QuotePriceTier[]
   counterOffers CounterOffer[]
   attachments   Attachment[]
@@ -283,6 +286,7 @@ model Message {
   senderType   String   @map("sender_type")
   senderUserId String?  @map("sender_user_id") @db.Uuid
   content      String
+  readAt       DateTime? @map("read_at") @db.Timestamptz
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   rfq    Rfq   @relation(fields: [rfqId], references: [id], onDelete: Cascade)

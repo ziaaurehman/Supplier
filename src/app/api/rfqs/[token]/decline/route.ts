@@ -15,7 +15,10 @@ export async function POST(
   try {
     const { token } = await params;
 
-    const rfq = await prisma.rfq.findUnique({ where: { token } });
+    const rfq = await prisma.rfq.findUnique({
+      where: { token },
+      include: { supplier: { select: { name: true } } },
+    });
     if (!rfq) return NextResponse.json({ error: "Invalid link" }, { status: 404 });
     if (rfq.tokenExpiresAt < new Date()) {
       return NextResponse.json({ error: "Link expired" }, { status: 410 });
@@ -52,7 +55,7 @@ export async function POST(
         action: "rfq_declined",
         entityType: "rfq",
         entityId: rfq.id,
-        details: { reason: data.reason, reasonText: data.reasonText },
+        details: { reason: data.reason, reasonText: data.reasonText, supplierName: rfq.supplier.name },
       },
     });
 

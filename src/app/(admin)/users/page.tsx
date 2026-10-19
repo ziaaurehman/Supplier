@@ -10,6 +10,7 @@ interface User {
   fullName: string;
   role: string;
   isActive: boolean;
+  invitePending: boolean;
   createdAt: string;
 }
 
@@ -34,6 +35,8 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState("");
+  const [reinviting, setReinviting] = useState<string | null>(null);
+  const [inviteSentId, setInviteSentId] = useState<string | null>(null);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -75,6 +78,23 @@ export default function UsersPage() {
       body: JSON.stringify({ isActive: !user.isActive }),
     });
     if (res.ok) fetchUsers();
+  };
+
+  const handleReinvite = async (userId: string) => {
+    setReinviting(userId);
+    try {
+      const res = await fetch(`/api/users/${userId}/reinvite`, { method: "POST" });
+      if (res.ok) {
+        setInviteSentId(userId);
+        setTimeout(() => setInviteSentId(null), 3000);
+        fetchUsers();
+      } else {
+        const data = await res.json();
+        alert(data.error || t("error"));
+      }
+    } finally {
+      setReinviting(null);
+    }
   };
 
   const handleRoleChange = async (userId: string, role: string) => {
@@ -209,29 +229,55 @@ export default function UsersPage() {
                     )}
                   </td>
                   <td style={{ padding: "10px 16px" }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: user.isActive ? "#059669" : "#94a3b8" }}>
-                      {user.isActive ? t("active") : t("inactive")}
-                    </span>
+                    {user.isActive && user.invitePending ? (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#d97706" }}>{t("invitePending")}</span>
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: user.isActive ? "#059669" : "#94a3b8" }}>
+                        {user.isActive ? t("active") : t("inactive")}
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: "10px 16px", fontSize: 12, color: "#94a3b8" }}>
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td style={{ padding: "10px 16px" }}>
-                    <button
-                      onClick={() => handleToggleActive(user)}
-                      style={{
-                        padding: "4px 12px",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: 4,
-                        background: "#fff",
-                        cursor: "pointer",
-                        fontSize: 12,
-                        fontFamily: "inherit",
-                        color: user.isActive ? "#ef4444" : "#059669",
-                      }}
-                    >
-                      {user.isActive ? t("deactivate") : t("activate")}
-                    </button>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => handleToggleActive(user)}
+                        style={{
+                          padding: "4px 12px",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 4,
+                          background: "#fff",
+                          cursor: "pointer",
+                          fontSize: 12,
+                          fontFamily: "inherit",
+                          color: user.isActive ? "#ef4444" : "#059669",
+                        }}
+                      >
+                        {user.isActive ? t("deactivate") : t("activate")}
+                      </button>
+                      {user.invitePending && (
+                        <button
+                          onClick={() => handleReinvite(user.id)}
+                          disabled={reinviting === user.id}
+                          style={{
+                            padding: "4px 12px",
+                            border: "1px solid #16ADE1",
+                            borderRadius: 4,
+                            background: inviteSentId === user.id ? "#ecfdf5" : "#f0f9ff",
+                            cursor: reinviting === user.id ? "default" : "pointer",
+                            fontSize: 12,
+                            fontFamily: "inherit",
+                            color: inviteSentId === user.id ? "#059669" : "#0369a1",
+                            fontWeight: 500,
+                            opacity: reinviting === user.id ? 0.6 : 1,
+                          }}
+                        >
+                          {inviteSentId === user.id ? t("inviteSent") : reinviting === user.id ? t("sending") : t("resendInvite")}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

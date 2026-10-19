@@ -7,12 +7,16 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../../../../context/LanguageContext";
 import { useAuth } from "../../../../context/AuthContext";
+import ItemAttachments from "../../../../components/ItemAttachments";
 
 interface RfqStatus {
   id: string;
+  token: string;
   status: string;
   sentAt: string | null;
   openedAt: string | null;
+  respondedAt: string | null;
+  unreadCount?: number;
   supplier: { id: string; name: string };
 }
 
@@ -22,6 +26,18 @@ interface ProjectItem {
   description: string | null;
   decorationMethod: string | null;
   quantityTiers: { quantity: number }[];
+}
+
+interface ProjectAttachment {
+  id: string;
+  projectItemId: string | null;
+  rfqId: string | null;
+  uploadedBySupplier: boolean;
+  visibleToSupplier: boolean;
+  fileName: string;
+  mimeType: string | null;
+  signedUrl: string | null;
+  createdAt: string;
 }
 
 interface ProjectDetail {
@@ -42,6 +58,7 @@ interface Message {
   senderType: string;
   senderName: string | null;
   createdAt: string;
+  isNew?: boolean;
 }
 
 interface InternalNote {
@@ -53,7 +70,7 @@ interface InternalNote {
 
 export default function ProjectDashboard({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { role } = useAuth();
   const router = useRouter();
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -64,8 +81,21 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
   const [selectedRfq, setSelectedRfq] = useState<string>("");
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
-  const [attachments, setAttachments] = useState<{ id: string; fileName: string; fileUrl: string; createdAt: string }[]>([]);
+  const [attachments, setAttachments] = useState<ProjectAttachment[]>([]);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [shareNewUpload, setShareNewUpload] = useState(false);
+  const [copiedRfqId, setCopiedRfqId] = useState<string | null>(null);
+
+  const handleCopyLink = async (rfq: RfqStatus) => {
+    const url = `${window.location.origin}/quote/${rfq.token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedRfqId(rfq.id);
+      setTimeout(() => setCopiedRfqId((current) => (current === rfq.id ? null : current)), 2000);
+    } catch {
+      window.prompt(t("copyLinkManually"), url);
+    }
+  };
 
   useEffect(() => {
     Promise.all([
@@ -74,8 +104,14 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
     ]).then(([projectData, notesData]) => {
       setProject(projectData.project);
       setNotes(notesData.notes || []);
-      if (projectData.project?.rfqs?.length) {
-        setSelectedRfq(projectData.project.rfqs[0].id);
+      const rfqs: RfqStatus[] = projectData.project?.rfqs || [];
+      if (rfqs.length) {
+        const requested = new URLSearchParams(window.location.search).get("rfq");
+        const initial =
+          rfqs.find((r) => r.id === requested) ||
+          rfqs.find((r) => (r.unreadCount ?? 0) > 0) ||
+          rfqs[0];
+        setSelectedRfq(initial.id);
       }
     }).finally(() => setLoading(false));
 
@@ -97,13 +133,13 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
       const formData = new FormData();
       formData.append("file", file);
       formData.append("projectId", id);
+      formData.append("visibleToSupplier", String(shareNewUpload));
       const res = await fetch("/api/attachments", { method: "POST", body: formData });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setAttachments((prev) => [...prev, data.attachment]);
       } else {
-        const data = await res.json();
-        alert(data.error || "Upload failed");
+        alert(data.error || t("uploadFailed"));
       }
     } finally {
       setUploadingFile(false);
@@ -111,13 +147,34 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
     }
   };
 
+  const projectLoaded = !!project;
   useEffect(() => {
-    if (!selectedRfq || !project) return;
+    if (!selectedRfq || !projectLoaded) return;
     fetch(`/api/rfqs/admin/${selectedRfq}/messages`)
       .then((r) => r.json())
-      .then((data) => setMessages(data.messages || []))
+      .then((data) => {
+        setMessages(data.messages || []);
+        setProject((prev) =>
+          prev && prev.rfqs.some((r) => r.id === selectedRfq && (r.unreadCount ?? 0) > 0)
+            ? { ...prev, rfqs: prev.rfqs.map((r) => (r.id === selectedRfq ? { ...r, unreadCount: 0 } : r)) }
+            : prev
+        );
+      })
       .catch(() => setMessages([]));
-  }, [selectedRfq, project]);
+  }, [selectedRfq, projectLoaded]);
+
+  useEffect(() => {
+    const section = window.location.hash.slice(1);
+    if (projectLoaded && (section === "messages" || section === "attachments")) {
+      document.getElementById(section)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [projectLoaded]);
+
+  const openConversation = (rfqId: string) => {
+    setSelectedRfq(rfqId);
+    setActiveTab("message");
+    document.getElementById("messages")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const handleSend = async () => {
     if (!replyText.trim()) return;
@@ -154,12 +211,36 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
 
   const rfqStatusClass = (status: string) => {
     switch (status) {
+      case "sent": return styles.statusSent;
+      case "opened": return styles.statusOpened;
       case "quoted": return styles.statusQuoted;
       case "declined": return styles.statusDeclined;
-      case "opened": return styles.statusPending;
-      default: return styles.statusPending;
+      default: return styles.statusNeutral;
     }
   };
+
+  const formatDateTime = (iso: string) =>
+    new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(iso));
+
+  const rfqEventDate = (rfq: RfqStatus) =>
+    rfq.status === "quoted" || rfq.status === "declined"
+      ? rfq.respondedAt
+      : rfq.status === "opened"
+        ? rfq.openedAt
+        : rfq.sentAt;
+
+  const rfqTimeline = (rfq: RfqStatus) =>
+    [
+      rfq.sentAt && `${t("rfqSent")}: ${formatDateTime(rfq.sentAt)}`,
+      rfq.openedAt && `${t("rfqOpened")}: ${formatDateTime(rfq.openedAt)}`,
+      rfq.respondedAt && `${rfqStatusLabel(rfq.status)}: ${formatDateTime(rfq.respondedAt)}`,
+    ].filter(Boolean).join("\n");
 
   const rfqStatusLabel = (status: string) => {
     switch (status) {
@@ -171,6 +252,30 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
       default: return status;
     }
   };
+
+  const handleToggleShare = async (a: ProjectAttachment) => {
+    const share = !a.visibleToSupplier;
+    if (share && !confirm(t("shareFileConfirm"))) return;
+    const res = await fetch(`/api/attachments/${a.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visibleToSupplier: share }),
+    });
+    if (res.ok) {
+      setAttachments((prev) => prev.map((x) => (x.id === a.id ? { ...x, visibleToSupplier: share } : x)));
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || t("error"));
+    }
+  };
+
+  const generalAttachments = attachments
+    .filter((a) => !a.projectItemId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const teamFiles = generalAttachments.filter((a) => !a.uploadedBySupplier);
+  const supplierFileGroups = (project?.rfqs || [])
+    .map((rfq) => ({ rfq, files: generalAttachments.filter((a) => a.uploadedBySupplier && a.rfqId === rfq.id) }))
+    .filter((g) => g.files.length > 0);
 
   if (loading || !project) {
     return (
@@ -222,20 +327,55 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                 <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>{t("noRfqsSent")}</p>
               ) : (
                 <ul className={styles.supplierList}>
-                  {project.rfqs.map((rfq) => (
-                    <li key={rfq.id} className={styles.supplierItem}>
-                      <div className={styles.supplierInfo}>
-                        <strong>{rfq.supplier.name}</strong>
-                        <span>
-                          {rfq.status === "sent" && rfq.sentAt && `Sent: ${new Date(rfq.sentAt).toLocaleString()}`}
-                          {rfq.status === "opened" && rfq.openedAt && `Opened: ${new Date(rfq.openedAt).toLocaleString()}`}
-                          {rfq.status === "quoted" && t("quoteReceived")}
-                          {rfq.status === "declined" && t("declined")}
-                        </span>
-                      </div>
-                      <span className={rfqStatusClass(rfq.status)}>{rfqStatusLabel(rfq.status)}</span>
-                    </li>
-                  ))}
+                  {project.rfqs.map((rfq) => {
+                    const eventDate = rfqEventDate(rfq);
+                    const copied = copiedRfqId === rfq.id;
+                    return (
+                      <li key={rfq.id} className={styles.supplierItem}>
+                        <div className={styles.supplierInfo}>
+                          <strong>
+                            {rfq.supplier.name}
+                            {(rfq.unreadCount ?? 0) > 0 && (
+                              <button
+                                type="button"
+                                className={styles.unreadBadge}
+                                onClick={() => openConversation(rfq.id)}
+                                title={t("tabMessages")}
+                              >
+                                {t("newMessagesCount").replace("{count}", String(rfq.unreadCount))}
+                              </button>
+                            )}
+                          </strong>
+                          {eventDate && (
+                            <span title={rfqTimeline(rfq)}>{formatDateTime(eventDate)}</span>
+                          )}
+                        </div>
+                        <div className={styles.supplierActions}>
+                          <span className={`${styles.statusPill} ${rfqStatusClass(rfq.status)}`}>
+                            {rfqStatusLabel(rfq.status)}
+                          </span>
+                          <button
+                            type="button"
+                            className={`${styles.copyLinkBtn} ${copied ? styles.copyLinkBtnDone : ""}`}
+                            onClick={() => handleCopyLink(rfq)}
+                            title={copied ? t("linkCopied") : t("copyLinkHint")}
+                            aria-label={copied ? t("linkCopied") : t("copyLink")}
+                          >
+                            {copied ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M20 6 9 17l-5-5" />
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -249,33 +389,77 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                   <p><strong>{t("itemName")}:</strong> {item.name}</p>
                   {item.decorationMethod && <p><strong>{t("decoMethod")}:</strong> {item.decorationMethod}</p>}
                   <p><strong>{t("quantityTiers")}:</strong> {item.quantityTiers.map((qt) => qt.quantity).join(" / ")}</p>
+                  <ItemAttachments
+                    files={attachments
+                      .filter((a) => a.projectItemId === item.id)
+                      .reverse()
+                      .map((a) => ({ id: a.id, fileName: a.fileName, mimeType: a.mimeType, url: a.signedUrl }))}
+                  />
                 </div>
               ))}
             </div>
           </div>
 
           <div className={styles.column}>
-            <div className={styles.card}>
+            <div className={styles.card} id="attachments">
               <h2 className={styles.sectionTitle}>{t("attachFile")}</h2>
-              {attachments.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  {attachments.map((a) => (
-                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}>
-                      <span>{a.fileName}</span>
-                      <a href={a.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--primary-color)", fontSize: 12 }}>{t("download")}</a>
-                      <span style={{ marginLeft: "auto", color: "#94a3b8", fontSize: 11 }}>{new Date(a.createdAt).toLocaleDateString()}</span>
+
+              <h3 className={styles.fileGroupTitle}>{t("filesFromSuppliers")}</h3>
+              {supplierFileGroups.length === 0 ? (
+                <p className={styles.fileEmpty}>{t("noSupplierFiles")}</p>
+              ) : (
+                supplierFileGroups.map(({ rfq, files }) => (
+                  <div key={rfq.id} className={styles.fileGroup}>
+                    <div className={styles.fileGroupSupplier}>{rfq.supplier.name}</div>
+                    {files.map((a) => (
+                      <div key={a.id} className={styles.fileRow}>
+                        <span className={styles.fileName} title={a.fileName}>{a.fileName}</span>
+                        <span className={styles.fileMeta}>{formatDateTime(a.createdAt)}</span>
+                        {a.signedUrl && (
+                          <a href={a.signedUrl} target="_blank" rel="noopener noreferrer" className={styles.fileLink}>{t("download")}</a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
+
+              <h3 className={styles.fileGroupTitle}>{t("internalFiles")}</h3>
+              {teamFiles.length === 0 ? (
+                <p className={styles.fileEmpty}>{t("noTeamFiles")}</p>
+              ) : (
+                <div className={styles.fileGroup}>
+                  {teamFiles.map((a) => (
+                    <div key={a.id} className={styles.fileRow}>
+                      <span className={styles.fileName} title={a.fileName}>{a.fileName}</span>
+                      <span className={a.visibleToSupplier ? styles.shareBadgeShared : styles.shareBadgeInternal}>
+                        {a.visibleToSupplier ? t("sharedWithSuppliers") : t("internalOnly")}
+                      </span>
+                      {a.signedUrl && (
+                        <a href={a.signedUrl} target="_blank" rel="noopener noreferrer" className={styles.fileLink}>{t("download")}</a>
+                      )}
+                      <button type="button" className={styles.shareToggle} onClick={() => handleToggleShare(a)}>
+                        {a.visibleToSupplier ? t("makeInternal") : t("shareWithSuppliers")}
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
-              <label style={{ display: "inline-block", padding: "8px 16px", background: "#f1f5f9", borderRadius: 4, cursor: uploadingFile ? "wait" : "pointer", fontSize: 13, fontWeight: 600 }}>
-                {uploadingFile ? t("uploading") : t("uploadFile")}
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" style={{ display: "none" }} onChange={handleFileUpload} disabled={uploadingFile} />
-              </label>
-              <span style={{ fontSize: 12, color: "#94a3b8", marginLeft: 8 }}>{t("fileTypes")}</span>
+
+              <div className={styles.uploadRow}>
+                <label className={styles.uploadBtn} style={{ cursor: uploadingFile ? "wait" : "pointer" }}>
+                  {uploadingFile ? t("uploading") : t("uploadFile")}
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" hidden onChange={handleFileUpload} disabled={uploadingFile} />
+                </label>
+                <label className={styles.shareCheckbox}>
+                  <input type="checkbox" checked={shareNewUpload} onChange={(e) => setShareNewUpload(e.target.checked)} />
+                  {t("shareWithSuppliers")}
+                </label>
+              </div>
+              <p className={styles.fileHint}>{t("fileTypes")}</p>
             </div>
 
-            <div className={styles.card}>
+            <div className={styles.card} id="messages">
               <h2 className={styles.sectionTitle}>{t("messagingNotes")}</h2>
 
               {project.rfqs.length > 0 && activeTab === "message" && (
@@ -287,7 +471,10 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                     style={{ width: "100%", padding: "6px 10px", border: "1px solid #e2e8f0", borderRadius: 4, fontSize: 13, fontFamily: "inherit" }}
                   >
                     {project.rfqs.map((rfq) => (
-                      <option key={rfq.id} value={rfq.id}>{rfq.supplier.name}</option>
+                      <option key={rfq.id} value={rfq.id}>
+                        {rfq.supplier.name}
+                        {(rfq.unreadCount ?? 0) > 0 ? ` (${t("newMessagesCount").replace("{count}", String(rfq.unreadCount))})` : ""}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -320,8 +507,13 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                     messages.map((msg) => (
                       <div key={msg.id} className={`${styles.messageGroup} ${msg.senderType === "supplier" ? "" : styles.outgoing}`}>
                         <div className={styles.messageHeader}>
-                          <strong>{msg.senderName || (msg.senderType === "supplier" ? "Supplier" : "You")}</strong>
+                          <strong>
+                            {msg.senderType === "supplier"
+                              ? project.rfqs.find((r) => r.id === selectedRfq)?.supplier.name || t("supplierLabel")
+                              : msg.senderName || t("you")}
+                          </strong>
                           <span>{new Date(msg.createdAt).toLocaleString()}</span>
+                          {msg.isNew && <span className={styles.newPill}>{t("newBadge")}</span>}
                         </div>
                         <div className={styles.messageBubble}>{msg.content}</div>
                       </div>
@@ -363,6 +555,9 @@ export default function ProjectDashboard({ params }: { params: Promise<{ id: str
                     {sending ? t("sending") : activeTab === "note" ? t("addNote") : t("sendMessage")}
                   </button>
                 </div>
+                {activeTab === "message" && project.rfqs.length > 0 && (
+                  <p className={styles.replyHint}>{t("supplierNotifiedHint")}</p>
+                )}
               </div>
             </div>
           </div>

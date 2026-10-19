@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export type Role = "ADMIN" | "INTERNAL_SALES" | "FIELD_SALES" | null;
 
@@ -17,7 +16,6 @@ interface DbUser {
 interface AuthContextType {
   role: Role;
   user: DbUser | null;
-  supabaseUser: SupabaseUser | null;
   login: (email: string, password: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   isHydrated: boolean;
@@ -28,13 +26,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<DbUser | null>(null);
-  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
-  const fetchDbUser = useCallback(async (authUser: SupabaseUser) => {
+  const fetchDbUser = useCallback(async (): Promise<DbUser | null> => {
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
@@ -43,34 +40,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return data.user;
       }
     } catch {
-      // User not in DB yet
+      // Network failure — treated as signed out
     }
+    setUser(null);
     return null;
   }, []);
 
   useEffect(() => {
-    const initAuth = async () => {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        setSupabaseUser(authUser);
-        await fetchDbUser(authUser);
-      }
-      setIsHydrated(true);
-    };
+    fetchDbUser().finally(() => setIsHydrated(true));
 
-    initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
-          setSupabaseUser(session.user);
-          await fetchDbUser(session.user);
-        } else if (event === "SIGNED_OUT") {
-          setSupabaseUser(null);
-          setUser(null);
-        }
-      }
-    );
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") setUser(null);
+    });
 
     return () => subscription.unsubscribe();
   }, [supabase.auth, fetchDbUser]);
@@ -81,9 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
       if (data.user) {
-        setSupabaseUser(data.user);
-        const dbUser = await fetchDbUser(data.user);
-        if (!dbUser) return { error: "User not found in platform. Contact admin." };
+        const dbUser = await fetchDbUser();
+        if (!dbUser) {
+          await supabase.auth.signOut();
+          return { error: "User not found in platform. Contact admin." };
+        }
         router.push("/");
       }
       return {};
@@ -95,14 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    setSupabaseUser(null);
     router.push("/login");
   };
 
   const role = user?.role ?? null;
 
   return (
-    <AuthContext.Provider value={{ role, user, supabaseUser, login, logout, isHydrated, isLoading }}>
+    <AuthContext.Provider value={{ role, user, login, logout, isHydrated, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

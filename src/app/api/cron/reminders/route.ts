@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendReminderEmail } from "@/lib/email";
+import { isDeadlinePassed } from "@/lib/dates";
 
 const MAX_REMINDERS = 2;
 const REMINDER_DAYS = [3, 6];
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
       const nextReminderDay = REMINDER_DAYS[rfq.reminderCount];
       if (!nextReminderDay || daysSinceSent < nextReminderDay) continue;
 
-      if (rfq.project.quoteDeadline && new Date(rfq.project.quoteDeadline) < now) continue;
+      if (isDeadlinePassed(rfq.project.quoteDeadline, now)) continue;
 
       const primaryContact = rfq.supplier.contacts.find((c) => c.isPrimary) || rfq.supplier.contacts[0];
       if (!primaryContact) continue;

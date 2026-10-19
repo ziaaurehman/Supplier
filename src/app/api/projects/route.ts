@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { z } from "zod";
+import { isPastDateForServer } from "@/lib/dates";
 
 const createProjectSchema = z.object({
   title: z.string().min(1),
   customerName: z.string().optional(),
-  quoteDeadline: z.string().nullable().optional(),
-  requestedDeliveryDate: z.string().nullable().optional(),
+  quoteDeadline: z.string().nullable().optional()
+    .refine((v) => !v || !isPastDateForServer(v), "Quote deadline cannot be in the past"),
+  requestedDeliveryDate: z.string().nullable().optional()
+    .refine((v) => !v || !isPastDateForServer(v), "Delivery date cannot be in the past"),
   internalDescription: z.string().nullable().optional(),
   items: z.array(
     z.object({
@@ -23,7 +26,10 @@ const createProjectSchema = z.object({
       ).min(1),
     })
   ).min(1),
-});
+}).refine(
+  (d) => !d.quoteDeadline || !d.requestedDeliveryDate || d.requestedDeliveryDate >= d.quoteDeadline,
+  { message: "Delivery date cannot be before the quote deadline", path: ["requestedDeliveryDate"] }
+);
 
 export async function GET(request: NextRequest) {
   try {
@@ -129,7 +135,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ project }, { status: 201 });
   } catch (e: unknown) {
     if (e instanceof z.ZodError) {
-      return NextResponse.json({ error: "Validation error", details: e.errors }, { status: 400 });
+      return NextResponse.json({ error: e.errors[0]?.message || "Validation error", details: e.errors }, { status: 400 });
     }
     const message = e instanceof Error ? e.message : "Internal error";
     return NextResponse.json({ error: message }, { status: 500 });

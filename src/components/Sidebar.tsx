@@ -1,17 +1,29 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./Sidebar.module.css";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
 
+function matches(path: string | null, href: string) {
+  return path === href || (href !== "/" && !!path?.startsWith(href));
+}
+
+function NavDot() {
+  const { pending } = useLinkStatus();
+  return <span className={`${styles.dot} ${pending ? styles.dotPending : ""}`} aria-hidden>•</span>;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
   const { role, user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [pendingNav, setPendingNav] = useState<{ href: string; from: string | null } | null>(null);
+  // Highlight the clicked item immediately; the pending entry expires once the pathname changes.
+  const currentPath = pendingNav && pendingNav.from === pathname ? pendingNav.href : pathname;
 
   const navItems = [
     { label: t("dashboard"), href: "/" },
@@ -55,11 +67,17 @@ export default function Sidebar() {
         <nav className={`${styles.nav} ${isOpen ? styles.navOpen : ""}`}>
           <ul>
             {navItems.map((item) => {
-              const isActive = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
+              const isActive = matches(currentPath, item.href);
               return (
                 <li key={item.href} className={isActive ? styles.active : ""}>
-                  <Link href={item.href} onClick={() => setIsOpen(false)}>
-                    <span className={styles.dot}>•</span> {item.label}
+                  <Link
+                    href={item.href}
+                    onClick={() => {
+                      setIsOpen(false);
+                      if (!matches(pathname, item.href)) setPendingNav({ href: item.href, from: pathname });
+                    }}
+                  >
+                    <NavDot /> {item.label}
                   </Link>
                 </li>
               );
